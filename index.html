@@ -1,261 +1,56 @@
-<script>
-    // --- CONFIGURATION ---
-    const SUPABASE_URL = 'https://domtvkfulaimxsbyvryd.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Lorena’s Cooking</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    // --- INTELLIGENT INITIALIZATION ---
-    sb.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        // Logged in! Now we ask the Database: "Is this user an admin?"
-        const { data: adminRecord } = await sb
-            .from('admins')
-            .select('email')
-            .eq('email', session.user.email)
-            .single();
-
-        if (adminRecord) {
-            // Database confirmed: This user IS an admin
-            toggleView('view-admin');
-            loadAdminData();
-            loadSuggestionsList(); 
-            loadRecipeLibrary(); 
-            loadClients();
-        } else {
-            // Database said: No record found. Must be a Customer.
-            toggleView('view-public');
-            loadPublicData();
-            unlockSuggestionBox(session.user.email);
-        }
-      } else {
-        // Not logged in -> Show Public + Locked Suggestion Box
-        toggleView('view-public');
-        loadPublicData();
-        lockSuggestionBox();
-      }
-    });
-
-    // --- MAGIC LINK / SUGGESTION LOGIC ---
-    async function sendMagicLink() {
-        const email = document.getElementById('verify-email').value.trim();
-        if (!email) return alert("Please enter your email.");
-        
-        const btn = event.target;
-        btn.innerText = "Sending Link...";
-        btn.disabled = true;
-
-        const { error } = await sb.auth.signInWithOtp({
-            email: email,
-            options: { emailRedirectTo: window.location.href }
-        });
-
-        if (error) {
-            alert("Error: " + error.message);
-            btn.innerText = "Send Verification Link";
-            btn.disabled = false;
-        } else {
-            alert("Check your email! We sent you a secure link to verify.");
-            btn.innerText = "Link Sent! Check Inbox";
-        }
+  <style>
+    /* --- FONTS & BASICS --- */
+    @font-face {
+      font-family: 'Fresh';
+      src: url('FRESH.ttf') format('truetype');
+      font-weight: normal; font-style: normal;
     }
 
-    function unlockSuggestionBox(email) {
-        const container = document.getElementById('suggestion-box-container');
-        const template = document.getElementById('unlocked-template').innerHTML;
-        container.innerHTML = template; 
-        const draft = localStorage.getItem('suggestion_draft');
-        if(draft) document.getElementById('suggestion-text').value = draft;
+    :root {
+      --bg-color: #f4f5f0;    
+      --card-bg: #ffffff;
+      --brand: #1b4d3e;       /* Deep Forest Green */
+      --brand-light: #e6f0eb; 
+      --text-main: #1d1d1f;   
+      --text-muted: #86868b;  
+      --radius: 20px;         
+      --shadow: 0 10px 30px -10px rgba(0,0,0,0.12);
+      --max-width: 980px;    
     }
 
-    function lockSuggestionBox() {}
-
-    async function submitSuggestion() {
-        const textBox = document.getElementById('suggestion-text');
-        const content = textBox.value.trim();
-        if(!content) return alert("Please type a suggestion.");
-
-        const btn = event.target;
-        btn.innerText = "Sending...";
-        btn.disabled = true;
-
-        const { data: { user } } = await sb.auth.getUser();
-        const { error } = await sb.from('suggestions').insert({ content: content, email: user.email });
-        
-        if(error) alert("Error: " + error.message);
-        else {
-            alert("Suggestion sent! Lorena will see it.");
-            textBox.value = "";
-            localStorage.removeItem('suggestion_draft'); 
-        }
-        btn.innerText = "Send Suggestion"; btn.disabled = false;
-    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
-    document.addEventListener('input', function(e) {
-        if(e.target.id === 'suggestion-text') {
-            localStorage.setItem('suggestion_draft', e.target.value);
-        }
-    });
-
-    // --- DATA LOADING & AI IMAGES ---
-    async function loadPublicData() {
-      const params = new URLSearchParams(window.location.search);
-      const archiveId = params.get('id');
-      let menu = null;
-
-      if (archiveId) {
-        const { data } = await sb.from('menus').select('*').eq('id', archiveId).single();
-        menu = data;
-        if(menu) document.getElementById('expired-notice').style.display = 'block';
-      } else {
-        const { data } = await sb.from('menus').select('*').eq('is_active', true).limit(1).single();
-        menu = data;
-      }
-
-      if (menu) {
-        document.getElementById('week-display').textContent = menu.week_label;
-        const d = menu.menu_data;
-        
-        const getAiImage = (foodName) => {
-            const prompt = `delicious gourmet ${foodName}, professional food photography, 4k, studio lighting, depth of field`;
-            return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true`;
-        };
-
-        document.getElementById('menu-grid-container').innerHTML = `
-          <div class="meal-card">
-            <div class="meal-img-box"><img src="${getAiImage(d.m1_main)}" class="meal-img" onload="this.style.opacity=1"></div>
-            <div class="meal-content"><span class="meal-number">Option 01</span><h3 class="meal-title">${d.m1_main}</h3><p class="meal-side">${d.m1_side}</p></div>
-          </div>
-          <div class="meal-card">
-            <div class="meal-img-box"><img src="${getAiImage(d.m2_main)}" class="meal-img" onload="this.style.opacity=1"></div>
-             <div class="meal-content"><span class="meal-number">Option 02</span><h3 class="meal-title">${d.m2_main}</h3><p class="meal-side">${d.m2_side}</p></div>
-          </div>
-          <div class="meal-card">
-            <div class="meal-img-box"><img src="${getAiImage(d.m3_main)}" class="meal-img" onload="this.style.opacity=1"></div>
-             <div class="meal-content"><span class="meal-number">Option 03</span><h3 class="meal-title">${d.m3_main}</h3><p class="meal-side">${d.m3_side}</p></div>
-          </div>
-        `;
-      } else {
-        document.getElementById('week-display').style.display = 'none';
-        document.getElementById('menu-grid-container').innerHTML = `<div style="text-align:center; grid-column:1/-1;">No active menu found.</div>`;
-      }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif; color: var(--text-main); background-color: var(--bg-color);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+      line-height: 1.5;
     }
 
-    async function loadArchiveData() {
-       const { data: history } = await sb.from('menus').select('id, week_label').eq('is_active', false).order('created_at', { ascending: false });
-       const list = document.getElementById('archive-list');
-       if(history && history.length) {
-         list.innerHTML = history.map(m => `<a href="?id=${m.id}" class="archive-link"><span style="float:right; color:#cbd5e1;">&rarr;</span>${m.week_label}</a>`).join('');
-       } else { list.innerHTML = `<div style="text-align:center; color:#ccc; padding:30px;">No past menus found.</div>`; }
-    }
+    .wrap { max-width: var(--max-width); margin: 0 auto; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
 
-    // --- CRM / ADMIN LOGIC ---
-    async function loadClients() {
-        const { data: clients } = await sb.from('clients').select('*').order('name', {ascending: true});
-        const container = document.getElementById('clients-list');
-        if(clients && clients.length) {
-            container.innerHTML = clients.map(c => `
-                <div class="recipe-item">
-                    <div><strong>${c.name}</strong><br><span style="font-size:12px; color:#666;">${c.phone}</span></div>
-                    <button class="btn btn-delete" onclick="deleteClient(${c.id})">Remove</button>
-                </div>`).join('');
-        } else { container.innerHTML = "No clients added yet."; }
-    }
-    async function addClient() {
-        const name = document.getElementById('client-name').value.trim();
-        const phone = document.getElementById('client-phone').value.trim();
-        if(!name || !phone) return alert("Please enter name and phone.");
-        await sb.from('clients').insert({ name, phone });
-        document.getElementById('client-name').value = ''; document.getElementById('client-phone').value = '';
-        loadClients();
-    }
-    async function deleteClient(id) { if(!confirm("Remove this client?")) return; await sb.from('clients').delete().eq('id', id); loadClients(); }
+    /* --- HEADER --- */
+    header { text-align: center; padding: 40px 0 20px; }
+    .logo-img { max-width: 320px; width: 100%; height: auto; display: block; margin: 0 auto; }
+    .handwritten-label { font-family: 'Fresh', cursive; font-size: 32px; color: var(--brand); text-align: center; margin: 10px 0 25px; letter-spacing: 1px; transform: rotate(-2deg); }
 
-    function switchAdminTab(tabName) {
-        ['editor','library','requests','clients'].forEach(t => document.getElementById('tab-'+t).style.display='none');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('tab-' + tabName).style.display = 'block';
-        event.target.classList.add('active');
-    }
+    /* --- CARDS & GRID --- */
+    .menu-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 10px; }
+    @media (min-width: 768px) { .menu-grid { grid-template-columns: repeat(3, 1fr); align-items: stretch; } }
 
-    function autoFillDate() {
-        const picker = document.getElementById('date-picker');
-        if(!picker.value) return;
-        const parts = picker.value.split('-');
-        const start = new Date(parts[0], parts[1]-1, parts[2]); 
-        const end = new Date(start);
-        end.setDate(start.getDate() + 4); 
-        const options = { month: 'short', day: 'numeric' };
-        document.getElementById('edit-week').value = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
-    }
-    function copyMenuForText() {
-        const week = document.getElementById('edit-week').value;
-        const m1 = document.getElementById('m1-main').value;
-        const m2 = document.getElementById('m2-main').value;
-        const m3 = document.getElementById('m3-main').value;
-        if(!week || !m1) return alert("Fill out the menu first!");
-        const text = `🥗 Lorena's Cooking Menu\n📅 Week: ${week}\n\n1️⃣ ${m1}\n2️⃣ ${m2}\n3️⃣ ${m3}\n\nreply to order!`;
-        navigator.clipboard.writeText(text).then(() => alert("Menu copied! You can now paste it into a text message."));
-    }
-
-    async function loadAdminData() {
-      const { data: recipes } = await sb.from('recipes').select('*');
-      const mList = document.getElementById('list-mains'); const sList = document.getElementById('list-sides');
-      mList.innerHTML = ''; sList.innerHTML = '';
-      if (recipes) recipes.forEach(r => {
-        const opt = document.createElement('option'); opt.value = r.name;
-        if(r.category === 'main') mList.appendChild(opt); if(r.category === 'side') sList.appendChild(opt);
-      });
-    }
-    async function loadRecipeLibrary() {
-        const { data: recipes } = await sb.from('recipes').select('*').order('category', {ascending: true}).order('name', {ascending: true});
-        const container = document.getElementById('library-list');
-        if(recipes && recipes.length) {
-            container.innerHTML = recipes.map(r => `
-                <div class="recipe-item"><span><strong>${r.category.toUpperCase()}:</strong> ${r.name}</span><button class="btn btn-delete" onclick="deleteRecipe(${r.id})">Delete</button></div>`).join('');
-        } else { container.innerHTML = "No recipes saved yet."; }
-    }
-    async function deleteRecipe(id) { if(!confirm("Delete this recipe?")) return; await sb.from('recipes').delete().eq('id', id); loadRecipeLibrary(); loadAdminData(); }
-    async function loadSuggestionsList() {
-        const { data: list } = await sb.from('suggestions').select('*').order('created_at', {ascending: false});
-        const container = document.getElementById('admin-suggestion-list');
-        if(list && list.length > 0) {
-            container.innerHTML = list.map(item => `<div class="admin-suggestion-item"><div style="font-weight:bold; color:var(--brand);">${item.email || 'Anonymous'}</div><div style="margin-top:4px;">${item.content}</div></div>`).join('');
-        } else { container.innerHTML = '<div style="color:#ccc; font-style:italic;">No suggestions yet.</div>'; }
-    }
-
-    async function saveMenu() {
-      const weekLabel = document.getElementById('edit-week').value;
-      const m1_main = document.getElementById('m1-main').value; const m1_side = document.getElementById('m1-side').value;
-      const m2_main = document.getElementById('m2-main').value; const m2_side = document.getElementById('m2-side').value;
-      const m3_main = document.getElementById('m3-main').value; const m3_side = document.getElementById('m3-side').value;
-      if (!weekLabel || !m1_main) return alert("Please fill out the menu.");
-      const btn = document.querySelector('.btn-green');
-      if(btn) { btn.textContent = "Publishing..."; btn.disabled = true; }
-      await sb.from('menus').update({ is_active: false }).eq('is_active', true);
-      const saveR = async (n, c) => { if(!n) return; const { data } = await sb.from('recipes').select('id').eq('name', n).single(); if(!data) await sb.from('recipes').insert({ name: n, category: c }); };
-      await saveR(m1_main, 'main'); await saveR(m1_side, 'side'); await saveR(m2_main, 'main'); await saveR(m2_side, 'side'); await saveR(m3_main, 'main'); await saveR(m3_side, 'side');
-      const { error } = await sb.from('menus').insert({ week_label: weekLabel, is_active: true, menu_data: { m1_main, m1_side, m2_main, m2_side, m3_main, m3_side } });
-      if(error) { alert(error.message); if(btn){btn.disabled=false; btn.textContent="Publish Live Menu";} } else { location.reload(); }
-    }
-
-    function toggleView(id) { ['view-login', 'view-public', 'view-admin', 'view-archive'].forEach(v => { const el = document.getElementById(v); if(el) el.style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none'); }); }
-    function showLogin() { toggleView('view-login'); }
-    function showPublic() { toggleView('view-public'); }
-    function showArchive() { toggleView('view-archive'); loadArchiveData(); }
-
-    async function handleLogin() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) alert(error.message); 
-    }
-    async function handleLogout() { await sb.auth.signOut(); }
-    async function updatePassword() {
-      const newPassword = document.getElementById('new-password').value;
-      if (!newPassword) return alert("Please type a password first.");
-      const btn = event.target; const originalText = btn.innerText; btn.innerText = "Updating..."; btn.disabled = true;
-      const { error } = await sb.auth.updateUser({ password: newPassword });
-      if (error) alert("Error: " + error.message); else { alert("Success! Password saved."); document.getElementById('new-password').value = ""; }
-      btn.innerText = originalText; btn.disabled = false;
-    }
-  </script>
+    .meal-card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0; display: flex; flex-direction: column; text-align: center; transition: transform 0.2s ease; height: 100%; border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
+    .meal-card:hover { transform: translateY(-3px); }
+    
+    .meal-img-box { width: 100%; height: 20
