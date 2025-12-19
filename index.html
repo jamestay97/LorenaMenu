@@ -13,7 +13,6 @@
 
   <style>
     /* --- CUSTOM FONT LOADING --- */
-    /* Ensure FRESH.ttf is in the same folder on GitHub */
     @font-face {
       font-family: 'Fresh';
       src: url('FRESH.ttf') format('truetype');
@@ -234,7 +233,6 @@
       background: #fef2f2; color: #b91c1c; text-align: center; padding: 12px;
       border-radius: 8px; font-weight: 600; margin-bottom: 20px; font-size: 14px;
     }
-
   </style>
 </head>
 <body>
@@ -321,7 +319,7 @@
       </div>
 
       <button class="btn" onclick="saveMenu()">Publish Live Menu</button>
-      
+
       <div style="margin-top:40px; border-top:1px solid #e2e8f0; padding-top:20px;">
         <h3 style="font-size:16px; margin:0 0 15px 0; color:var(--brand);">Account Settings</h3>
         <div class="input-group">
@@ -339,31 +337,33 @@
   </div>
 
   <script>
-    // --- CONFIGURATION ---
+    // --- 1. CONFIGURATION ---
     const SUPABASE_URL = 'https://domtvkfulaimxsbyvryd.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
     
-    // Create the client correctly
+    // Create the client
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- INITIALIZATION ---
-    window.onload = async () => {
-      // Check if user is logged in
-      const { data: { session } } = await sb.auth.getSession();
-      
+    // --- 2. INTELLIGENT INITIALIZATION ---
+    // This listener waits for the "Invite Link" to be processed
+    sb.auth.onAuthStateChange((event, session) => {
       if (session) {
-        toggleView('view-admin'); 
-        loadAdminData(); 
-      } else { 
-        toggleView('view-public'); 
-        loadPublicData(); 
+        // If we have a session (logged in), show Admin
+        toggleView('view-admin');
+        loadAdminData();
+      } else {
+        // If no session, show Public
+        toggleView('view-public');
+        loadPublicData();
       }
-    };
+    });
 
-    // --- PUBLIC LOGIC ---
+    // --- 3. DATA LOGIC ---
     async function loadPublicData() {
+      // Check for Archive ID in URL
       const params = new URLSearchParams(window.location.search);
       const archiveId = params.get('id');
+
       let menu = null;
 
       if (archiveId) {
@@ -379,38 +379,22 @@
         document.getElementById('week-display').textContent = menu.week_label;
         const d = menu.menu_data;
         document.getElementById('menu-grid-container').innerHTML = `
-          <div class="meal-card">
-            <span class="meal-number">Option 01</span>
-            <h3 class="meal-title">${d.m1_main}</h3>
-            <p class="meal-side">${d.m1_side}</p>
-          </div>
-          <div class="meal-card">
-            <span class="meal-number">Option 02</span>
-            <h3 class="meal-title">${d.m2_main}</h3>
-            <p class="meal-side">${d.m2_side}</p>
-          </div>
-          <div class="meal-card">
-            <span class="meal-number">Option 03</span>
-            <h3 class="meal-title">${d.m3_main}</h3>
-            <p class="meal-side">${d.m3_side}</p>
-          </div>
+          <div class="meal-card"><span class="meal-number">Option 01</span><h3 class="meal-title">${d.m1_main}</h3><p class="meal-side">${d.m1_side}</p></div>
+          <div class="meal-card"><span class="meal-number">Option 02</span><h3 class="meal-title">${d.m2_main}</h3><p class="meal-side">${d.m2_side}</p></div>
+          <div class="meal-card"><span class="meal-number">Option 03</span><h3 class="meal-title">${d.m3_main}</h3><p class="meal-side">${d.m3_side}</p></div>
         `;
       } else {
         document.getElementById('week-display').style.display = 'none';
         document.getElementById('menu-grid-container').innerHTML = `<div style="text-align:center; grid-column:1/-1;">No active menu found.</div>`;
       }
 
-      // Load Archive
+      // Load History
       const { data: history } = await sb.from('menus').select('id, week_label').eq('is_active', false).order('created_at', { ascending: false });
       const list = document.getElementById('archive-list');
-      if(history && history.length) {
-        list.innerHTML = history.map(m => `<a href="?id=${m.id}" class="archive-link">${m.week_label}</a>`).join('');
-      } else {
-        list.innerHTML = `<div style="text-align:center; color:#ccc; font-size:12px;">No past menus.</div>`;
-      }
+      if(history && history.length) list.innerHTML = history.map(m => `<a href="?id=${m.id}" class="archive-link">${m.week_label}</a>`).join('');
+      else list.innerHTML = `<div style="text-align:center; color:#ccc; font-size:12px;">No past menus.</div>`;
     }
 
-    // --- ADMIN LOGIC ---
     async function loadAdminData() {
       const { data: recipes } = await sb.from('recipes').select('*');
       const mList = document.getElementById('list-mains');
@@ -431,9 +415,8 @@
 
       if (!weekLabel || !m1_main) return alert("Please fill out the menu.");
       
-      const btn = document.querySelector('.btn');
-      btn.textContent = "Publishing...";
-      btn.disabled = true;
+      const btn = document.querySelector('.btn-green');
+      if(btn) { btn.textContent = "Publishing..."; btn.disabled = true; }
 
       await sb.from('menus').update({ is_active: false }).eq('is_active', true);
       
@@ -452,30 +435,33 @@
         menu_data: { m1_main, m1_side, m2_main, m2_side, m3_main, m3_side }
       });
 
-      if(error) { alert(error.message); btn.textContent = "Publish Live Menu"; btn.disabled = false; }
+      if(error) { alert(error.message); if(btn){btn.disabled=false; btn.textContent="Publish Live Menu";} }
       else { location.reload(); }
     }
 
     // --- AUTH LOGIC ---
-    function showLogin() { toggleView('view-login'); }
-    function showPublic() { toggleView('view-public'); }
     function toggleView(id) {
       ['view-login', 'view-public', 'view-admin'].forEach(v => document.getElementById(v).style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none'));
     }
-    
+    function showLogin() { toggleView('view-login'); }
+    function showPublic() { toggleView('view-public'); }
+
     async function handleLogin() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) alert(error.message); else location.reload();
+      if (error) alert(error.message); 
+      // Note: No reload needed here, onAuthStateChange will catch the login event automatically!
     }
-    
-    async function handleLogout() { await sb.auth.signOut(); location.reload(); }
+
+    async function handleLogout() { 
+      await sb.auth.signOut();
+      // No reload needed, listener handles it
+    }
 
     async function updatePassword() {
       const newPassword = document.getElementById('new-password').value;
       if (!newPassword) return alert("Please type a password first.");
-      
       const btn = event.target;
       const originalText = btn.innerText;
       btn.innerText = "Updating...";
@@ -483,13 +469,11 @@
 
       const { error } = await sb.auth.updateUser({ password: newPassword });
 
-      if (error) {
-        alert("Error: " + error.message);
-      } else {
-        alert("Success! Your password has been set. You can now log in normally.");
+      if (error) alert("Error: " + error.message);
+      else {
+        alert("Success! Password saved.");
         document.getElementById('new-password').value = "";
       }
-      
       btn.innerText = originalText;
       btn.disabled = false;
     }
