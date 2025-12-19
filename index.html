@@ -80,8 +80,20 @@
     .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid #e2e8f0; margin-top: 30px; }
     .btn-delete { background: #fee2e2; color: #b91c1c; font-size:12px; padding:6px 12px; width:auto; margin-top:0; }
     .btn-copy { background: #e0f2fe; color: #0284c7; }
-    
     .btn-resend { background:none; border:none; text-decoration:underline; color:var(--brand); cursor:pointer; font-size:12px; padding:0; }
+
+    /* NEW: Floating Admin Button */
+    .admin-floating-btn {
+        position: fixed; bottom: 20px; right: 20px;
+        background: var(--brand); color: white;
+        padding: 12px 20px; border-radius: 30px;
+        box-shadow: 0 5px 20px rgba(27, 77, 62, 0.4);
+        font-weight: 600; font-size: 14px;
+        cursor: pointer; z-index: 100;
+        display: none; /* Hidden by default */
+        transition: transform 0.2s;
+    }
+    .admin-floating-btn:hover { transform: scale(1.05); }
 
     /* --- ADMIN & UTILS --- */
     .admin-container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -105,6 +117,10 @@
   </style>
 </head>
 <body>
+
+  <button id="btn-open-dashboard" class="admin-floating-btn" onclick="showAdmin()">
+    ⚙️ Admin Dashboard
+  </button>
 
   <div id="view-login" class="wrap" style="display:none; justify-content:center;">
     <div class="admin-container" style="text-align:center; width:100%;">
@@ -181,7 +197,10 @@
 
   <div id="view-admin" class="wrap" style="display:none;">
     <div class="admin-container">
-      <h2 style="margin-top:0; color:var(--brand);">Admin Dashboard</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h2 style="margin:0; color:var(--brand);">Dashboard</h2>
+          <button onclick="showPublic()" style="background:#f1f5f9; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px;">&larr; View Live Menu</button>
+      </div>
       
       <div class="admin-tabs">
           <button class="tab-btn active" onclick="switchAdminTab('editor')">Menu Editor</button>
@@ -192,7 +211,7 @@
 
       <div id="tab-editor">
           <div class="input-group">
-            <label>Menu Start Date (Any day in the week)</label>
+            <label>Menu Start Date</label>
             <input type="date" id="date-picker" onchange="autoFillDate()">
             <input type="text" id="edit-week" placeholder="e.g. Oct 27 - Nov 1" style="background:#f8fafc;">
           </div>
@@ -268,24 +287,28 @@
             .single();
 
         if (adminRecord) {
-            // User IS in the 'admins' table -> Show Admin Dashboard
-            toggleView('view-admin');
-            loadAdminData();
-            loadSuggestionsList(); 
-            loadRecipeLibrary(); 
-            loadClients();
-        } else {
-            // User is NOT in 'admins' table -> Treat as Customer
+            // IS ADMIN -> Show "Dashboard" button on public page
+            document.getElementById('btn-open-dashboard').style.display = 'block';
+            
+            // If just logged in directly, maybe go to admin? 
+            // For now, let's default to Public view but with the button available.
             toggleView('view-public');
-            loadPublicData();
+            
+            // Pre-load data just in case they click it
+            loadAdminData(); loadSuggestionsList(); loadRecipeLibrary(); loadClients();
+        } else {
+            // IS CUSTOMER
+            document.getElementById('btn-open-dashboard').style.display = 'none';
+            toggleView('view-public');
             unlockSuggestionBox(session.user.email);
         }
       } else {
-        // Not logged in -> Show Public + Locked Box
+        // NOT LOGGED IN
+        document.getElementById('btn-open-dashboard').style.display = 'none';
         toggleView('view-public');
-        loadPublicData();
         lockSuggestionBox();
       }
+      loadPublicData(); // Always load public data
     });
 
     // --- MAGIC LINK & SUGGESTION LOGIC ---
@@ -328,7 +351,7 @@
     }
 
     function lockSuggestionBox() {
-        // Default HTML is locked, so we do nothing
+        // Default HTML is locked
     }
 
     async function submitSuggestion() {
@@ -410,7 +433,7 @@
        } else { list.innerHTML = `<div style="text-align:center; color:#ccc; padding:30px;">No past menus found.</div>`; }
     }
 
-    // --- ADMIN DASHBOARD LOGIC ---
+    // --- ADMIN LOGIC ---
     async function loadClients() {
         const { data: clients } = await sb.from('clients').select('*').order('name', {ascending: true});
         const container = document.getElementById('clients-list');
@@ -438,7 +461,6 @@
     async function copyAllEmails() {
         const { data: clients } = await sb.from('clients').select('email').not('email', 'is', null).neq('email', '');
         if(!clients || clients.length === 0) return alert("No emails found to copy.");
-        
         const emailString = clients.map(c => c.email).join(', ');
         navigator.clipboard.writeText(emailString).then(() => {
             alert(`Copied ${clients.length} emails to clipboard!\n\nPaste them into the 'BCC' field of your email to protect privacy.`);
@@ -466,14 +488,11 @@
     function autoFillDate() {
         const picker = document.getElementById('date-picker');
         if(!picker.value) return;
-        
         const parts = picker.value.split('-');
         const picked = new Date(parts[0], parts[1]-1, parts[2]); 
         
-        // INTELLIGENT WEEK FIX
-        // Find the Monday of the selected week
-        const day = picked.getDay(); // 0 (Sun) to 6 (Sat)
-        // If Sun(0), Monday was 6 days ago. If Mon(1), Monday is today.
+        // INTELLIGENT WEEK FIX (Any day -> Mon-Sun range)
+        const day = picked.getDay(); 
         const diffToMon = day === 0 ? 6 : day - 1; 
         
         const monday = new Date(picked);
@@ -502,9 +521,7 @@
         const m2 = document.getElementById('m2-main').value;
         const m3 = document.getElementById('m3-main').value;
         if(!week || !m1) return alert("Fill out the menu first!");
-        
         const emailBody = `Hi everyone!\n\nHere is the menu for the week of ${week}:\n\nOption 1: ${m1}\nOption 2: ${m2}\nOption 3: ${m3}\n\nPlease reply to let me know your order!\n\n- Lorena`;
-        
         navigator.clipboard.writeText(emailBody).then(() => alert("Copied Email Body to clipboard!"));
     }
 
@@ -551,6 +568,7 @@
     }
 
     function toggleView(id) { ['view-login', 'view-public', 'view-admin', 'view-archive'].forEach(v => { const el = document.getElementById(v); if(el) el.style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none'); }); }
+    function showAdmin() { toggleView('view-admin'); }
     function showLogin() { toggleView('view-login'); }
     function showPublic() { toggleView('view-public'); }
     function showArchive() { toggleView('view-archive'); loadArchiveData(); }
