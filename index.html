@@ -53,4 +53,460 @@
     .meal-card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0; display: flex; flex-direction: column; text-align: center; transition: transform 0.2s ease; height: 100%; border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
     .meal-card:hover { transform: translateY(-3px); }
     
-    .meal-img-box { width: 100%; height: 20
+    .meal-img-box { width: 100%; height: 200px; background-color: #eee; overflow: hidden; position: relative; }
+    .meal-img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.5s ease; }
+    .meal-content { padding: 25px; display:flex; flex-direction:column; align-items:center; }
+
+    .meal-number { font-size: 11px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; background: var(--brand-light); display: inline-block; padding: 4px 10px; border-radius: 20px; align-self: center; }
+    .meal-title { font-size: 20px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.3; }
+    .meal-side { font-size: 15px; color: var(--text-muted); margin: 0; }
+
+    /* --- INFO BAR --- */
+    .info-bar { margin-top: 40px; text-align: center; background: #ffffff; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 15px; align-items: center; }
+    @media (min-width: 600px) { .info-bar { flex-direction: row; justify-content: space-around; text-align: left; } }
+    .price-tag { font-size: 14px; color: var(--text-muted); }
+    .price-tag strong { color: var(--brand); font-weight: 700; display:block; font-size:16px;}
+
+    /* --- SUGGESTION BOX --- */
+    .suggestion-card { margin-top: 40px; background: #fff; border: 2px dashed var(--brand); border-radius: var(--radius); padding: 25px; text-align: center; }
+    .suggestion-input { width: 100%; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; font-family: 'Inter', sans-serif; margin-top: 10px; font-size: 16px; resize: vertical; }
+    .verified-badge { background:#dcfce7; color:#166534; font-size:12px; padding:4px 8px; border-radius:12px; display:inline-block; margin-bottom:10px; font-weight:600; }
+
+    /* --- BUTTONS --- */
+    .btn { background: var(--brand); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; transition: background 0.2s; }
+    .btn:hover { background: #143d30; }
+    .btn-outline { background: transparent; color: var(--brand); border: 2px solid var(--brand-light); }
+    .btn-outline:hover { background: var(--brand-light); }
+    .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid #e2e8f0; margin-top: 30px; }
+    .btn-delete { background: #fee2e2; color: #b91c1c; font-size:12px; padding:6px 12px; width:auto; margin-top:0; }
+    .btn-copy { background: #e0f2fe; color: #0284c7; }
+
+    /* --- ADMIN & UTILS --- */
+    .admin-container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); }
+    .input-group { margin-bottom: 20px; }
+    input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; margin-top: 6px; font-family: 'Inter', sans-serif; }
+    label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    
+    .archive-container { max-width: 600px; margin: 0 auto; }
+    .archive-link { display: block; padding: 15px 20px; background: white; margin-bottom: 10px; border-radius: 12px; color: var(--text-main); text-decoration: none; font-weight: 500; box-shadow: 0 2px 10px rgba(0,0,0,0.03); transition: transform 0.1s; }
+    .archive-link:hover { transform: scale(1.01); color:var(--brand); }
+    .expired-banner { background: #fef2f2; color: #b91c1c; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; margin-bottom: 20px; font-size: 14px; }
+    
+    .admin-suggestion-item { background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; color: var(--text-main); border-left: 4px solid var(--brand); text-align:left; }
+    .recipe-item { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding:10px 0; font-size:14px; }
+    
+    /* Tabs */
+    .admin-tabs { display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px; overflow-x: auto;}
+    .tab-btn { background:none; border:none; color:var(--text-muted); font-weight:600; cursor:pointer; padding:5px; white-space:nowrap; }
+    .tab-btn.active { color:var(--brand); border-bottom:2px solid var(--brand); }
+
+  </style>
+</head>
+<body>
+
+  <div id="view-login" class="wrap" style="display:none; justify-content:center;">
+    <div class="admin-container" style="text-align:center; width:100%;">
+      <img src="logo.png" alt="Logo" style="width:180px; margin-bottom:20px;">
+      <h2 style="font-family:'Fresh', cursive; font-size:28px; color:var(--brand); margin-top:0;">Admin Access</h2>
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button class="btn" onclick="handleLogin()" style="margin-top:20px;">Secure Login</button>
+      <button onclick="showPublic()" style="background:none; border:none; color:var(--text-muted); margin-top:15px; cursor:pointer;">&larr; Back to Menu</button>
+    </div>
+  </div>
+
+  <div id="view-public" class="wrap">
+    <header>
+      <img src="logo.png" alt="Lorena's Cooking" class="logo-img">
+    </header>
+
+    <div id="expired-notice" class="expired-banner" style="display:none;">
+      ⚠️ You are viewing a past menu (Not available for order)
+    </div>
+
+    <div id="week-display" class="handwritten-label">Loading Menu...</div>
+
+    <div id="menu-grid-container" class="menu-grid">
+      <div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:40px;">Loading...</div>
+    </div>
+
+    <div class="info-bar">
+      <div class="price-tag">Price<br><strong>10 Meals for $150</strong></div>
+      <div class="price-tag">Order via Text<br><strong>813-426-5096</strong></div>
+      <div class="price-tag">Payment (Zelle)<br><strong>loreenaolivar03@gmail.com</strong></div>
+    </div>
+    
+    <div class="suggestion-card" id="suggestion-box-container">
+        <h3 style="color:var(--brand); margin:0;">Have a Craving?</h3>
+        <p style="color:var(--text-muted); font-size:14px; margin:5px 0 15px;">Verify your email to suggest a meal.</p>
+        
+        <input type="email" id="verify-email" class="suggestion-input" placeholder="Enter your email" style="margin-bottom:0;">
+        <button onclick="sendMagicLink()" class="btn" style="width:auto; padding: 10px 30px;">Send Verification Link</button>
+        <p style="font-size:11px; color:#999; margin-top:10px;">We will send a secure link to your inbox.</p>
+    </div>
+
+    <div id="unlocked-template" style="display:none;">
+        <div class="verified-badge">✓ Email Verified</div>
+        <h3 style="color:var(--brand); margin:0;">Have a Craving?</h3>
+        <textarea id="suggestion-text" class="suggestion-input" style="min-height:80px;" placeholder="e.g. I'd love to see Lasagna or Tacos..."></textarea>
+        <button onclick="submitSuggestion()" class="btn" style="width:auto; padding: 10px 30px;">Send Suggestion</button>
+    </div>
+
+    <div style="text-align:center; margin-top:30px;">
+        <button onclick="showArchive()" class="btn btn-outline" style="width:auto; padding: 10px 20px; font-size:14px;">View Past Menus &rarr;</button>
+    </div>
+
+    <div style="text-align:center; margin-top:30px; padding-bottom:20px;">
+      <a href="#" onclick="showLogin()" style="font-size:12px; color:#d1d5db; text-decoration:none;">Admin Access</a>
+    </div>
+  </div>
+
+  <div id="view-archive" class="wrap" style="display:none;">
+      <header>
+          <img src="logo.png" alt="Lorena's Cooking" class="logo-img" style="width:150px;">
+          <h2 style="color:var(--brand); margin-top:10px;">Past Menus</h2>
+      </header>
+      <div class="archive-container">
+          <div id="archive-list"><p style="text-align:center;">Loading history...</p></div>
+          <button onclick="showPublic()" class="btn" style="background:#475569; margin-top:30px;">&larr; Back to Current Menu</button>
+      </div>
+  </div>
+
+  <div id="view-admin" class="wrap" style="display:none;">
+    <div class="admin-container">
+      <h2 style="margin-top:0; color:var(--brand);">Admin Dashboard</h2>
+      
+      <div class="admin-tabs">
+          <button class="tab-btn active" onclick="switchAdminTab('editor')">Menu Editor</button>
+          <button class="tab-btn" onclick="switchAdminTab('clients')">CRM / Clients</button>
+          <button class="tab-btn" onclick="switchAdminTab('library')">Food Library</button>
+          <button class="tab-btn" onclick="switchAdminTab('requests')">Requests</button>
+      </div>
+
+      <div id="tab-editor">
+          <div class="input-group">
+            <label>Menu Start Date (Defaults to Monday)</label>
+            <input type="date" id="date-picker" onchange="autoFillDate()">
+            <input type="text" id="edit-week" placeholder="e.g. Oct 27 - Nov 1" style="background:#f8fafc;">
+          </div>
+          <div class="input-group"><label>Meal 1</label><input list="list-mains" id="m1-main"><input list="list-sides" id="m1-side"></div>
+          <div class="input-group"><label>Meal 2</label><input list="list-mains" id="m2-main"><input list="list-sides" id="m2-side"></div>
+          <div class="input-group"><label>Meal 3</label><input list="list-mains" id="m3-main"><input list="list-sides" id="m3-side"></div>
+          <button class="btn btn-green" onclick="saveMenu()">Publish Live Menu</button>
+          
+          <div style="margin-top:30px; border-top:1px dashed #ddd; padding-top:20px; text-align:center;">
+              <button class="btn btn-copy" onclick="copyMenuForText()">📋 Copy Menu for Text Blast</button>
+          </div>
+      </div>
+
+      <div id="tab-clients" style="display:none;">
+          <h3 style="font-size:16px; margin:0 0 10px 0; color:var(--brand);">My Client List</h3>
+          <div class="input-group" style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:20px;">
+              <input type="text" id="client-name" placeholder="Client Name" style="margin-top:0; margin-bottom:5px;">
+              <input type="tel" id="client-phone" placeholder="Phone Number" style="margin-top:0;">
+              <button class="btn" style="margin-top:10px; font-size:12px;" onclick="addClient()">+ Add Client</button>
+          </div>
+          <div id="clients-list" style="max-height:300px; overflow-y:auto;">Loading clients...</div>
+      </div>
+
+      <div id="tab-library" style="display:none;">
+          <p style="font-size:12px; color:var(--text-muted);">Manage your saved dishes here.</p>
+          <div id="library-list" style="max-height:400px; overflow-y:auto;">Loading...</div>
+      </div>
+
+      <div id="tab-requests" style="display:none;">
+          <p style="font-size:12px; color:var(--text-muted);">Customer suggestions and emails.</p>
+          <div id="admin-suggestion-list" style="max-height:400px; overflow-y:auto;">Loading...</div>
+      </div>
+
+      <div style="margin-top:40px; border-top:1px solid #e2e8f0; padding-top:20px;">
+        <h3 style="font-size:16px; margin:0 0 15px 0; color:var(--brand);">Account Settings</h3>
+        <div class="input-group">
+          <input type="password" id="new-password" placeholder="New Password">
+          <button class="btn" onclick="updatePassword()" style="background:#475569; margin-top:8px;">Update Password</button>
+        </div>
+      </div>
+      <button class="btn btn-logout" onclick="handleLogout()">Log Out</button>
+
+      <datalist id="list-mains"></datalist>
+      <datalist id="list-sides"></datalist>
+    </div>
+  </div>
+
+  <script>
+    // --- CONFIGURATION ---
+    const SUPABASE_URL = 'https://domtvkfulaimxsbyvryd.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- SECURE AUTHENTICATION ---
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        // Logged in! Query database to see if this user is an Admin
+        const { data: adminRecord } = await sb
+            .from('admins')
+            .select('email')
+            .eq('email', session.user.email)
+            .single();
+
+        if (adminRecord) {
+            // User IS in the 'admins' table -> Show Admin Dashboard
+            toggleView('view-admin');
+            loadAdminData();
+            loadSuggestionsList(); 
+            loadRecipeLibrary(); 
+            loadClients();
+        } else {
+            // User is NOT in 'admins' table -> Treat as Customer
+            toggleView('view-public');
+            loadPublicData();
+            unlockSuggestionBox(session.user.email);
+        }
+      } else {
+        // Not logged in -> Show Public + Locked Box
+        toggleView('view-public');
+        loadPublicData();
+        lockSuggestionBox();
+      }
+    });
+
+    // --- MAGIC LINK & SUGGESTION LOGIC ---
+    async function sendMagicLink() {
+        const email = document.getElementById('verify-email').value.trim();
+        if (!email) return alert("Please enter your email.");
+        
+        const btn = event.target;
+        btn.innerText = "Sending Link...";
+        btn.disabled = true;
+
+        const { error } = await sb.auth.signInWithOtp({
+            email: email,
+            options: { emailRedirectTo: window.location.href }
+        });
+
+        if (error) {
+            alert("Error: " + error.message);
+            btn.innerText = "Send Verification Link";
+            btn.disabled = false;
+        } else {
+            alert("Check your email! We sent you a secure link to verify.");
+            btn.innerText = "Link Sent! Check Inbox";
+        }
+    }
+
+    function unlockSuggestionBox(email) {
+        const container = document.getElementById('suggestion-box-container');
+        const template = document.getElementById('unlocked-template').innerHTML;
+        container.innerHTML = template; 
+        const draft = localStorage.getItem('suggestion_draft');
+        if(draft) document.getElementById('suggestion-text').value = draft;
+    }
+
+    function lockSuggestionBox() {
+        // Default HTML is locked, so we do nothing
+    }
+
+    async function submitSuggestion() {
+        const textBox = document.getElementById('suggestion-text');
+        const content = textBox.value.trim();
+        if(!content) return alert("Please type a suggestion.");
+
+        const btn = event.target;
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        const { data: { user } } = await sb.auth.getUser();
+        const { error } = await sb.from('suggestions').insert({ content: content, email: user.email });
+        
+        if(error) alert("Error: " + error.message);
+        else {
+            alert("Suggestion sent! Lorena will see it.");
+            textBox.value = "";
+            localStorage.removeItem('suggestion_draft'); 
+        }
+        btn.innerText = "Send Suggestion"; btn.disabled = false;
+    }
+    
+    document.addEventListener('input', function(e) {
+        if(e.target.id === 'suggestion-text') {
+            localStorage.setItem('suggestion_draft', e.target.value);
+        }
+    });
+
+    // --- DATA LOADING & AI IMAGES ---
+    async function loadPublicData() {
+      const params = new URLSearchParams(window.location.search);
+      const archiveId = params.get('id');
+      let menu = null;
+
+      if (archiveId) {
+        const { data } = await sb.from('menus').select('*').eq('id', archiveId).single();
+        menu = data;
+        if(menu) document.getElementById('expired-notice').style.display = 'block';
+      } else {
+        const { data } = await sb.from('menus').select('*').eq('is_active', true).limit(1).single();
+        menu = data;
+      }
+
+      if (menu) {
+        document.getElementById('week-display').textContent = menu.week_label;
+        const d = menu.menu_data;
+        
+        const getAiImage = (foodName) => {
+            const prompt = `delicious gourmet ${foodName}, professional food photography, 4k, studio lighting, depth of field`;
+            return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true`;
+        };
+
+        document.getElementById('menu-grid-container').innerHTML = `
+          <div class="meal-card">
+            <div class="meal-img-box"><img src="${getAiImage(d.m1_main)}" class="meal-img" onload="this.style.opacity=1"></div>
+            <div class="meal-content"><span class="meal-number">Option 01</span><h3 class="meal-title">${d.m1_main}</h3><p class="meal-side">${d.m1_side}</p></div>
+          </div>
+          <div class="meal-card">
+            <div class="meal-img-box"><img src="${getAiImage(d.m2_main)}" class="meal-img" onload="this.style.opacity=1"></div>
+             <div class="meal-content"><span class="meal-number">Option 02</span><h3 class="meal-title">${d.m2_main}</h3><p class="meal-side">${d.m2_side}</p></div>
+          </div>
+          <div class="meal-card">
+            <div class="meal-img-box"><img src="${getAiImage(d.m3_main)}" class="meal-img" onload="this.style.opacity=1"></div>
+             <div class="meal-content"><span class="meal-number">Option 03</span><h3 class="meal-title">${d.m3_main}</h3><p class="meal-side">${d.m3_side}</p></div>
+          </div>
+        `;
+      } else {
+        document.getElementById('week-display').style.display = 'none';
+        document.getElementById('menu-grid-container').innerHTML = `<div style="text-align:center; grid-column:1/-1;">No active menu found.</div>`;
+      }
+    }
+
+    async function loadArchiveData() {
+       const { data: history } = await sb.from('menus').select('id, week_label').eq('is_active', false).order('created_at', { ascending: false });
+       const list = document.getElementById('archive-list');
+       if(history && history.length) {
+         list.innerHTML = history.map(m => `<a href="?id=${m.id}" class="archive-link"><span style="float:right; color:#cbd5e1;">&rarr;</span>${m.week_label}</a>`).join('');
+       } else { list.innerHTML = `<div style="text-align:center; color:#ccc; padding:30px;">No past menus found.</div>`; }
+    }
+
+    // --- ADMIN DASHBOARD LOGIC ---
+    async function loadClients() {
+        const { data: clients } = await sb.from('clients').select('*').order('name', {ascending: true});
+        const container = document.getElementById('clients-list');
+        if(clients && clients.length) {
+            container.innerHTML = clients.map(c => `
+                <div class="recipe-item">
+                    <div><strong>${c.name}</strong><br><span style="font-size:12px; color:#666;">${c.phone}</span></div>
+                    <button class="btn btn-delete" onclick="deleteClient(${c.id})">Remove</button>
+                </div>`).join('');
+        } else { container.innerHTML = "No clients added yet."; }
+    }
+    async function addClient() {
+        const name = document.getElementById('client-name').value.trim();
+        const phone = document.getElementById('client-phone').value.trim();
+        if(!name || !phone) return alert("Please enter name and phone.");
+        await sb.from('clients').insert({ name, phone });
+        document.getElementById('client-name').value = ''; document.getElementById('client-phone').value = '';
+        loadClients();
+    }
+    async function deleteClient(id) { if(!confirm("Remove this client?")) return; await sb.from('clients').delete().eq('id', id); loadClients(); }
+
+    function switchAdminTab(tabName) {
+        ['editor','library','requests','clients'].forEach(t => document.getElementById('tab-'+t).style.display='none');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabName).style.display = 'block';
+        event.target.classList.add('active');
+    }
+
+    function setDefaultDate() {
+        const picker = document.getElementById('date-picker');
+        if(picker.value) return; 
+        const d = new Date();
+        const day = d.getDay();
+        const diff = (1 - day + 7) % 7; 
+        d.setDate(d.getDate() + diff); 
+        picker.valueAsDate = d;
+        autoFillDate(); 
+    }
+
+    function autoFillDate() {
+        const picker = document.getElementById('date-picker');
+        if(!picker.value) return;
+        const parts = picker.value.split('-');
+        const start = new Date(parts[0], parts[1]-1, parts[2]); 
+        const end = new Date(start);
+        end.setDate(start.getDate() + 4); 
+        const options = { month: 'short', day: 'numeric' };
+        document.getElementById('edit-week').value = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+    }
+    function copyMenuForText() {
+        const week = document.getElementById('edit-week').value;
+        const m1 = document.getElementById('m1-main').value;
+        const m2 = document.getElementById('m2-main').value;
+        const m3 = document.getElementById('m3-main').value;
+        if(!week || !m1) return alert("Fill out the menu first!");
+        const text = `🥗 Lorena's Cooking Menu\n📅 Week: ${week}\n\n1️⃣ ${m1}\n2️⃣ ${m2}\n3️⃣ ${m3}\n\nreply to order!`;
+        navigator.clipboard.writeText(text).then(() => alert("Menu copied! You can now paste it into a text message."));
+    }
+
+    async function loadAdminData() {
+      setDefaultDate();
+      const { data: recipes } = await sb.from('recipes').select('*');
+      const mList = document.getElementById('list-mains'); const sList = document.getElementById('list-sides');
+      mList.innerHTML = ''; sList.innerHTML = '';
+      if (recipes) recipes.forEach(r => {
+        const opt = document.createElement('option'); opt.value = r.name;
+        if(r.category === 'main') mList.appendChild(opt); if(r.category === 'side') sList.appendChild(opt);
+      });
+    }
+    async function loadRecipeLibrary() {
+        const { data: recipes } = await sb.from('recipes').select('*').order('category', {ascending: true}).order('name', {ascending: true});
+        const container = document.getElementById('library-list');
+        if(recipes && recipes.length) {
+            container.innerHTML = recipes.map(r => `
+                <div class="recipe-item"><span><strong>${r.category.toUpperCase()}:</strong> ${r.name}</span><button class="btn btn-delete" onclick="deleteRecipe(${r.id})">Delete</button></div>`).join('');
+        } else { container.innerHTML = "No recipes saved yet."; }
+    }
+    async function deleteRecipe(id) { if(!confirm("Delete this recipe?")) return; await sb.from('recipes').delete().eq('id', id); loadRecipeLibrary(); loadAdminData(); }
+    async function loadSuggestionsList() {
+        const { data: list } = await sb.from('suggestions').select('*').order('created_at', {ascending: false});
+        const container = document.getElementById('admin-suggestion-list');
+        if(list && list.length > 0) {
+            container.innerHTML = list.map(item => `<div class="admin-suggestion-item"><div style="font-weight:bold; color:var(--brand);">${item.email || 'Anonymous'}</div><div style="margin-top:4px;">${item.content}</div></div>`).join('');
+        } else { container.innerHTML = '<div style="color:#ccc; font-style:italic;">No suggestions yet.</div>'; }
+    }
+
+    async function saveMenu() {
+      const weekLabel = document.getElementById('edit-week').value;
+      const m1_main = document.getElementById('m1-main').value; const m1_side = document.getElementById('m1-side').value;
+      const m2_main = document.getElementById('m2-main').value; const m2_side = document.getElementById('m2-side').value;
+      const m3_main = document.getElementById('m3-main').value; const m3_side = document.getElementById('m3-side').value;
+      if (!weekLabel || !m1_main) return alert("Please fill out the menu.");
+      const btn = document.querySelector('.btn-green');
+      if(btn) { btn.textContent = "Publishing..."; btn.disabled = true; }
+      await sb.from('menus').update({ is_active: false }).eq('is_active', true);
+      const saveR = async (n, c) => { if(!n) return; const { data } = await sb.from('recipes').select('id').eq('name', n).single(); if(!data) await sb.from('recipes').insert({ name: n, category: c }); };
+      await saveR(m1_main, 'main'); await saveR(m1_side, 'side'); await saveR(m2_main, 'main'); await saveR(m2_side, 'side'); await saveR(m3_main, 'main'); await saveR(m3_side, 'side');
+      const { error } = await sb.from('menus').insert({ week_label: weekLabel, is_active: true, menu_data: { m1_main, m1_side, m2_main, m2_side, m3_main, m3_side } });
+      if(error) { alert(error.message); if(btn){btn.disabled=false; btn.textContent="Publish Live Menu";} } else { location.reload(); }
+    }
+
+    function toggleView(id) { ['view-login', 'view-public', 'view-admin', 'view-archive'].forEach(v => { const el = document.getElementById(v); if(el) el.style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none'); }); }
+    function showLogin() { toggleView('view-login'); }
+    function showPublic() { toggleView('view-public'); }
+    function showArchive() { toggleView('view-archive'); loadArchiveData(); }
+
+    async function handleLogin() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) alert(error.message); 
+    }
+    async function handleLogout() { await sb.auth.signOut(); }
+    async function updatePassword() {
+      const newPassword = document.getElementById('new-password').value;
+      if (!newPassword) return alert("Please type a password first.");
+      const btn = event.target; const originalText = btn.innerText; btn.innerText = "Updating..."; btn.disabled = true;
+      const { error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) alert("Error: " + error.message); else { alert("Success! Password saved."); document.getElementById('new-password').value = ""; }
+      btn.innerText = originalText; btn.disabled = false;
+    }
+  </script>
+</body>
+</html>
