@@ -80,6 +80,8 @@
     .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid #e2e8f0; margin-top: 30px; }
     .btn-delete { background: #fee2e2; color: #b91c1c; font-size:12px; padding:6px 12px; width:auto; margin-top:0; }
     .btn-copy { background: #e0f2fe; color: #0284c7; }
+    
+    .btn-resend { background:none; border:none; text-decoration:underline; color:var(--brand); cursor:pointer; font-size:12px; padding:0; }
 
     /* --- ADMIN & UTILS --- */
     .admin-container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -139,10 +141,14 @@
     <div class="suggestion-card" id="suggestion-box-container">
         <h3 style="color:var(--brand); margin:0;">Have a Craving?</h3>
         <p style="color:var(--text-muted); font-size:14px; margin:5px 0 15px;">Verify your email to suggest a meal.</p>
-        
         <input type="email" id="verify-email" class="suggestion-input" placeholder="Enter your email" style="margin-bottom:0;">
-        <button onclick="sendMagicLink()" class="btn" style="width:auto; padding: 10px 30px;">Send Verification Link</button>
+        <button id="send-link-btn" onclick="sendMagicLink()" class="btn" style="width:auto; padding: 10px 30px;">Send Verification Link</button>
         <p style="font-size:11px; color:#999; margin-top:10px;">We will send a secure link to your inbox.</p>
+        
+        <div id="resend-area" style="display:none; margin-top:15px; padding-top:10px; border-top:1px dashed #eee;">
+            <p style="font-size:12px; color:#555; margin:0 0 5px 0;">Didn't get the email?</p>
+            <button onclick="sendMagicLink()" class="btn-resend">Resend Link</button>
+        </div>
     </div>
 
     <div id="unlocked-template" style="display:none;">
@@ -195,17 +201,28 @@
           <button class="btn btn-green" onclick="saveMenu()">Publish Live Menu</button>
           
           <div style="margin-top:30px; border-top:1px dashed #ddd; padding-top:20px; text-align:center;">
+              <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">Weekly Blasts</p>
               <button class="btn btn-copy" onclick="copyMenuForText()">📋 Copy Menu for Text Blast</button>
+              <button class="btn btn-copy" onclick="copyMenuForEmail()" style="margin-top:10px;">✉️ Copy Menu for Email Body</button>
           </div>
       </div>
 
       <div id="tab-clients" style="display:none;">
           <h3 style="font-size:16px; margin:0 0 10px 0; color:var(--brand);">My Client List</h3>
+          
           <div class="input-group" style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:20px;">
               <input type="text" id="client-name" placeholder="Client Name" style="margin-top:0; margin-bottom:5px;">
-              <input type="tel" id="client-phone" placeholder="Phone Number" style="margin-top:0;">
+              <input type="tel" id="client-phone" placeholder="Phone Number" style="margin-top:0; margin-bottom:5px;">
+              <input type="email" id="client-email" placeholder="Email Address" style="margin-top:0;">
               <button class="btn" style="margin-top:10px; font-size:12px;" onclick="addClient()">+ Add Client</button>
           </div>
+          
+          <div style="margin-bottom:20px; text-align:right;">
+               <button class="btn btn-copy" style="width:auto; font-size:12px; padding:8px 15px;" onclick="copyAllEmails()">
+                   Copy All Emails (BCC)
+               </button>
+          </div>
+
           <div id="clients-list" style="max-height:300px; overflow-y:auto;">Loading clients...</div>
       </div>
 
@@ -242,7 +259,7 @@
     // --- SECURE AUTHENTICATION ---
     sb.auth.onAuthStateChange(async (event, session) => {
       if (session) {
-        // Logged in! Query database to see if this user is an Admin
+        // Query database to see if this user is an Admin
         const { data: adminRecord } = await sb
             .from('admins')
             .select('email')
@@ -250,20 +267,17 @@
             .single();
 
         if (adminRecord) {
-            // User IS in the 'admins' table -> Show Admin Dashboard
             toggleView('view-admin');
             loadAdminData();
             loadSuggestionsList(); 
             loadRecipeLibrary(); 
             loadClients();
         } else {
-            // User is NOT in 'admins' table -> Treat as Customer
             toggleView('view-public');
             loadPublicData();
             unlockSuggestionBox(session.user.email);
         }
       } else {
-        // Not logged in -> Show Public + Locked Box
         toggleView('view-public');
         loadPublicData();
         lockSuggestionBox();
@@ -275,7 +289,8 @@
         const email = document.getElementById('verify-email').value.trim();
         if (!email) return alert("Please enter your email.");
         
-        const btn = event.target;
+        const btn = document.getElementById('send-link-btn');
+        const originalText = btn.innerText;
         btn.innerText = "Sending Link...";
         btn.disabled = true;
 
@@ -285,12 +300,18 @@
         });
 
         if (error) {
-            alert("Error: " + error.message);
-            btn.innerText = "Send Verification Link";
+            if(error.status === 429) {
+                alert("Please wait 60 seconds before resending the link.");
+            } else {
+                alert("Error: " + error.message);
+            }
+            btn.innerText = originalText;
             btn.disabled = false;
         } else {
             alert("Check your email! We sent you a secure link to verify.");
             btn.innerText = "Link Sent! Check Inbox";
+            document.getElementById('resend-area').style.display = 'block';
+            setTimeout(() => { btn.disabled = false; }, 2000);
         }
     }
 
@@ -302,9 +323,7 @@
         if(draft) document.getElementById('suggestion-text').value = draft;
     }
 
-    function lockSuggestionBox() {
-        // Default HTML is locked, so we do nothing
-    }
+    function lockSuggestionBox() { }
 
     async function submitSuggestion() {
         const textBox = document.getElementById('suggestion-text');
@@ -385,27 +404,50 @@
        } else { list.innerHTML = `<div style="text-align:center; color:#ccc; padding:30px;">No past menus found.</div>`; }
     }
 
-    // --- ADMIN DASHBOARD LOGIC ---
+    // --- ADMIN DASHBOARD LOGIC (CRM UPDATED) ---
     async function loadClients() {
         const { data: clients } = await sb.from('clients').select('*').order('name', {ascending: true});
         const container = document.getElementById('clients-list');
         if(clients && clients.length) {
             container.innerHTML = clients.map(c => `
                 <div class="recipe-item">
-                    <div><strong>${c.name}</strong><br><span style="font-size:12px; color:#666;">${c.phone}</span></div>
+                    <div>
+                        <strong>${c.name}</strong><br>
+                        <span style="font-size:12px; color:#666;">${c.phone || '-'}</span><br>
+                        <span style="font-size:12px; color:#666;">${c.email || '-'}</span>
+                    </div>
                     <button class="btn btn-delete" onclick="deleteClient(${c.id})">Remove</button>
                 </div>`).join('');
         } else { container.innerHTML = "No clients added yet."; }
     }
+    
     async function addClient() {
         const name = document.getElementById('client-name').value.trim();
         const phone = document.getElementById('client-phone').value.trim();
-        if(!name || !phone) return alert("Please enter name and phone.");
-        await sb.from('clients').insert({ name, phone });
-        document.getElementById('client-name').value = ''; document.getElementById('client-phone').value = '';
+        const email = document.getElementById('client-email').value.trim();
+        
+        if(!name) return alert("Client name is required.");
+        
+        await sb.from('clients').insert({ name, phone, email });
+        
+        // Reset fields
+        document.getElementById('client-name').value = ''; 
+        document.getElementById('client-phone').value = '';
+        document.getElementById('client-email').value = '';
         loadClients();
     }
+    
     async function deleteClient(id) { if(!confirm("Remove this client?")) return; await sb.from('clients').delete().eq('id', id); loadClients(); }
+
+    async function copyAllEmails() {
+        const { data: clients } = await sb.from('clients').select('email').not('email', 'is', null).neq('email', '');
+        if(!clients || clients.length === 0) return alert("No emails found to copy.");
+        
+        const emailString = clients.map(c => c.email).join(', ');
+        navigator.clipboard.writeText(emailString).then(() => {
+            alert(`Copied ${clients.length} emails to clipboard!\n\nPaste them into the 'BCC' field of your email to protect privacy.`);
+        });
+    }
 
     function switchAdminTab(tabName) {
         ['editor','library','requests','clients'].forEach(t => document.getElementById('tab-'+t).style.display='none');
@@ -435,6 +477,7 @@
         const options = { month: 'short', day: 'numeric' };
         document.getElementById('edit-week').value = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
     }
+    
     function copyMenuForText() {
         const week = document.getElementById('edit-week').value;
         const m1 = document.getElementById('m1-main').value;
@@ -442,7 +485,19 @@
         const m3 = document.getElementById('m3-main').value;
         if(!week || !m1) return alert("Fill out the menu first!");
         const text = `🥗 Lorena's Cooking Menu\n📅 Week: ${week}\n\n1️⃣ ${m1}\n2️⃣ ${m2}\n3️⃣ ${m3}\n\nreply to order!`;
-        navigator.clipboard.writeText(text).then(() => alert("Menu copied! You can now paste it into a text message."));
+        navigator.clipboard.writeText(text).then(() => alert("Copied Text Blast to clipboard!"));
+    }
+    
+    function copyMenuForEmail() {
+        const week = document.getElementById('edit-week').value;
+        const m1 = document.getElementById('m1-main').value;
+        const m2 = document.getElementById('m2-main').value;
+        const m3 = document.getElementById('m3-main').value;
+        if(!week || !m1) return alert("Fill out the menu first!");
+        
+        const emailBody = `Hi everyone!\n\nHere is the menu for the week of ${week}:\n\nOption 1: ${m1}\nOption 2: ${m2}\nOption 3: ${m3}\n\nPlease reply to let me know your order!\n\n- Lorena`;
+        
+        navigator.clipboard.writeText(emailBody).then(() => alert("Copied Email Body to clipboard!"));
     }
 
     async function loadAdminData() {
