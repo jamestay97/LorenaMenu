@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lorena’s Cooking</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#f6faf7; --card:#ffffff; --text:#0f172a; --muted:#475569;
+      --line:#e2e8f0; --accent:#16a34a; --highlight:#bbf7d0;
+      --radius: 18px; --max: 900px;
+    }
+    body{ margin:0; font-family: system-ui, -apple-system, sans-serif; color:var(--text); background: var(--bg); line-height:1.4; }
+    .wrap{ max-width:var(--max); margin: 40px auto; padding: 0 16px; }
+    
+    /* Utility & Card Styles */
+    .card{ background:var(--card); border:1px solid var(--line); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow:hidden; margin-bottom: 20px; }
+    .header{ padding: 28px; border-bottom:1px solid var(--line); text-align: center; }
+    .body{ padding:28px; }
+    h1{ margin:0; font-size:28px; }
+    h2{ font-size:14px; letter-spacing:1px; text-transform:uppercase; color: var(--accent); margin-top: 10px;}
+    .price{ background:var(--highlight); padding:10px; border-radius:8px; font-weight:bold; text-align:center; margin-bottom:20px;}
+    
+    /* Menu Item Styling */
+    .meal-box{ border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:12px; }
+    .meal-title{ font-size:18px; font-weight:700; color:var(--text); margin:0 0 4px 0; }
+    .meal-side{ color:var(--muted); margin:0; font-style: italic; }
+
+    /* Admin Interface Styles */
+    .admin-panel { display: none; } /* Hidden by default */
+    .input-group { margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 15px; }
+    label { display: block; font-size: 12px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; font-weight: bold;}
+    input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; margin-bottom: 8px; box-sizing: border-box;}
+    .btn { background: var(--text); color: white; padding: 14px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; }
+    .btn-green { background: var(--accent); }
+    .btn-logout { background: transparent; color: var(--muted); border: 1px solid var(--line); margin-top: 10px;}
+
+    /* Archive Section */
+    .archive-link { display: block; padding: 10px; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--muted); }
+    .archive-link:hover { color: var(--accent); background: #f9f9f9; }
+    .expired-badge { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 10px;}
+
+    /* Login Form */
+    #login-view { max-width: 400px; margin: 100px auto; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div id="login-view" class="wrap" style="display:none;">
+    <div class="card body">
+      <h2>Lorena's Admin</h2>
+      <p>Please sign in to edit the menu.</p>
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button class="btn btn-green" onclick="handleLogin()">Login</button>
+    </div>
+  </div>
+
+  <main id="public-view" class="wrap">
+    <section class="card" id="active-menu-card">
+      <div class="header">
+        <h1>Lorena’s Cooking</h1>
+        <p>Home fresh meals</p>
+        <h2 id="public-date-label">Weekly Menu</h2>
+        <p><strong>Call/Text:</strong> 813-426-5096</p>
+      </div>
+      <div class="body">
+        <div id="expired-notice" style="display:none; text-align:center;">
+          <span class="expired-badge">PAST MENU - NOT AVAILABLE</span>
+        </div>
+
+        <div class="price">Meals are 10 for $150</div>
+        
+        <div id="public-meals-container">
+          <p style="text-align:center; color:#999;">Loading menu...</p>
+        </div>
+
+        <hr style="border:0; border-top:1px solid var(--line); margin:20px 0;">
+        <p><strong>Payment due:</strong> Friday by 12 PM</p>
+        <div style="background:#e8f7ee; padding:12px; border-radius:10px; font-weight:bold; text-align:center;">
+          Zelle: loreenaolivar03@gmail.com
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:40px;">
+      <div class="header" style="padding:15px;">
+        <h3>Past Menus</h3>
+      </div>
+      <div id="archive-list" class="body" style="padding:0;">
+        </div>
+    </section>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a href="#" onclick="showLogin()" style="color:#ccc; font-size:12px; text-decoration:none;">Admin Login</a>
+    </div>
+  </main>
+
+  <main id="admin-view" class="wrap admin-panel">
+    <div class="card">
+      <div class="header">
+        <h1>Menu Editor</h1>
+        <p>Edit this week's 3 meals</p>
+      </div>
+      <div class="body">
+        <label>Week Label (e.g. Oct 20 - 25)</label>
+        <input type="text" id="week-label" placeholder="Date Range">
+
+        <div class="input-group">
+          <label>Meal Option #1</label>
+          <input list="mains-list" id="m1-main" placeholder="Select or type Main Dish">
+          <input list="sides-list" id="m1-side" placeholder="Select or type Sides">
+        </div>
+
+        <div class="input-group">
+          <label>Meal Option #2</label>
+          <input list="mains-list" id="m2-main" placeholder="Select or type Main Dish">
+          <input list="sides-list" id="m2-side" placeholder="Select or type Sides">
+        </div>
+
+        <div class="input-group">
+          <label>Meal Option #3</label>
+          <input list="mains-list" id="m3-main" placeholder="Select or type Main Dish">
+          <input list="sides-list" id="m3-side" placeholder="Select or type Sides">
+        </div>
+
+        <datalist id="mains-list"></datalist>
+        <datalist id="sides-list"></datalist>
+
+        <button class="btn btn-green" onclick="saveMenu()">Publish Menu</button>
+        <button class="btn btn-logout" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- CONFIGURATION ---
+    // PASTE YOUR KEYS HERE FROM SUPABASE DASHBOARD
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+    const SUPABASE_KEY = 'YOUR_ANON_KEY_HERE';
+    const supabase = supa.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- STATE ---
+    let recipes = { mains: [], sides: [] };
+
+    // --- INITIALIZATION ---
+    window.onload = async () => {
+      checkUser();
+      loadPublicData();
+    };
+
+    // --- AUTHENTICATION ---
+    async function checkUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        document.getElementById('admin-view').style.display = 'block';
+        document.getElementById('public-view').style.display = 'none';
+        document.getElementById('login-view').style.display = 'none';
+        loadAdminData();
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('public-view').style.display = 'none';
+      document.getElementById('login-view').style.display = 'block';
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) alert(error.message);
+      else location.reload();
+    }
+
+    async function handleLogout() {
+      await supabase.auth.signOut();
+      location.reload();
+    }
+
+    // --- PUBLIC DISPLAY LOGIC ---
+    async function loadPublicData() {
+      // 1. Fetch Active Menu
+      let { data: activeMenu } = await supabase
+        .from('menus').select('*').eq('is_active', true).limit(1).single();
+      
+      // If we are viewing a specific archived menu (via URL hash)
+      const urlParams = new URLSearchParams(window.location.search);
+      const archiveId = urlParams.get('id');
+
+      if(archiveId) {
+        let { data: archive } = await supabase.from('menus').select('*').eq('id', archiveId).single();
+        if(archive) {
+            activeMenu = archive;
+            document.getElementById('expired-notice').style.display = 'block';
+        }
+      }
+
+      if (activeMenu) renderMenuCard(activeMenu);
+
+      // 2. Fetch History List
+      let { data: history } = await supabase
+        .from('menus').select('id, week_label, created_at').eq('is_active', false).order('created_at', {ascending:false});
+      
+      const historyContainer = document.getElementById('archive-list');
+      if(history && history.length > 0){
+        historyContainer.innerHTML = history.map(m => 
+          `<a href="?id=${m.id}" class="archive-link">Week of ${m.week_label || 'Unknown Date'}</a>`
+        ).join('');
+      } else {
+        historyContainer.innerHTML = '<div style="padding:15px; text-align:center">No past menus yet.</div>';
+      }
+    }
+
+    function renderMenuCard(menu) {
+      document.getElementById('public-date-label').innerText = menu.week_label || "Weekly Menu";
+      const container = document.getElementById('public-meals-container');
+      const data = menu.menu_data;
+      
+      container.innerHTML = `
+        <div class="meal-box">
+          <h3 class="meal-title">${data.m1_main}</h3>
+          <p class="meal-side">${data.m1_side}</p>
+        </div>
+        <div class="meal-box">
+          <h3 class="meal-title">${data.m2_main}</h3>
+          <p class="meal-side">${data.m2_side}</p>
+        </div>
+        <div class="meal-box">
+          <h3 class="meal-title">${data.m3_main}</h3>
+          <p class="meal-side">${data.m3_side}</p>
+        </div>
+      `;
+    }
+
+    // --- ADMIN LOGIC ---
+    async function loadAdminData() {
+      // Load Recipes for Autocomplete
+      let { data: allRecipes } = await supabase.from('recipes').select('*');
+      
+      const mainsList = document.getElementById('mains-list');
+      const sidesList = document.getElementById('sides-list');
+      
+      // Populate Datalists
+      allRecipes.forEach(r => {
+        const option = document.createElement('option');
+        option.value = r.name;
+        if(r.category === 'main') mainsList.appendChild(option);
+        if(r.category === 'side') sidesList.appendChild(option);
+      });
+    }
+
+    async function saveMenu() {
+      const weekLabel = document.getElementById('week-label').value;
+      const m1_main = document.getElementById('m1-main').value;
+      const m1_side = document.getElementById('m1-side').value;
+      const m2_main = document.getElementById('m2-main').value;
+      const m2_side = document.getElementById('m2-side').value;
+      const m3_main = document.getElementById('m3-main').value;
+      const m3_side = document.getElementById('m3-side').value;
+
+      if(!weekLabel || !m1_main) return alert("Please fill out the menu!");
+
+      // 1. Archive old active menus
+      await supabase.from('menus').update({ is_active: false }).eq('is_active', true);
+
+      // 2. Save New Recipes to Library (if they don't exist)
+      await saveRecipeIfNew(m1_main, 'main'); await saveRecipeIfNew(m1_side, 'side');
+      await saveRecipeIfNew(m2_main, 'main'); await saveRecipeIfNew(m2_side, 'side');
+      await saveRecipeIfNew(m3_main, 'main'); await saveRecipeIfNew(m3_side, 'side');
+
+      // 3. Insert New Menu
+      const { error } = await supabase.from('menus').insert({
+        week_label: weekLabel,
+        is_active: true,
+        menu_data: { m1_main, m1_side, m2_main, m2_side, m3_main, m3_side }
+      });
+
+      if(error) alert('Error saving: ' + error.message);
+      else {
+        alert('Menu Published!');
+        location.reload();
+      }
+    }
+
+    async function saveRecipeIfNew(name, category) {
+      if(!name) return;
+      // Check if exists locally in datalist (approximation)
+      // For simplicity in this version, we just try to insert. 
+      // Ideally we check first, but let's just insert and ignore duplicates if unique constraint exists.
+      // Since we didn't add a unique constraint in SQL, we will check DB.
+      const { data } = await supabase.from('recipes').select('id').eq('name', name).single();
+      if(!data) {
+        await supabase.from('recipes').insert({ name, category });
+      }
+    }
+
+  </script>
+</body>
+</html>
