@@ -74,6 +74,7 @@
 
     .btn { background: var(--brand); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; transition: background 0.2s; }
     .btn:hover { background: #143d30; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
     .btn-outline { background: transparent; color: var(--brand); border: 2px solid var(--brand-light); }
     .btn-outline:hover { background: var(--brand-light); }
     .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid #e2e8f0; margin-top: 30px; }
@@ -116,15 +117,9 @@
     .bot-msg.ai { background: white; border: 1px solid #eee; align-self: flex-start; color: #333; }
     .bot-msg.user { background: var(--brand); color: white; align-self: flex-end; margin-left: auto; }
 
+    /* MODAL */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; }
     .modal-box { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 20px; max-height: 80vh; overflow-y: auto; }
-
-    @keyframes highlightPulse {
-        0% { border-color: #e2e8f0; box-shadow: 0 0 0 0 rgba(27, 77, 62, 0); }
-        50% { border-color: #1b4d3e; box-shadow: 0 0 10px 0 rgba(27, 77, 62, 0.3); }
-        100% { border-color: #e2e8f0; box-shadow: 0 0 0 0 rgba(27, 77, 62, 0); }
-    }
-    .highlight-focus { animation: highlightPulse 2s infinite; border: 2px solid var(--brand) !important; }
 
   </style>
 </head>
@@ -161,8 +156,18 @@
       <div class="modal-box" style="text-align:center;">
           <h2 style="color:#b91c1c; margin-top:0;">Access Denied</h2>
           <p>You are logged in, but your email is not in the Admin list.</p>
-          <p style="font-size:12px; color:#666;">If you are Lorena, please add your email to the <code>admins</code> table in Supabase.</p>
           <button class="btn" onclick="handleLogout()">Log Out</button>
+      </div>
+  </div>
+
+  <div id="view-reset-password" class="wrap" style="display:none; justify-content:center;">
+      <div class="admin-container" style="text-align:center;">
+          <img src="logo_optimized_1000-Photoroom.png" alt="Logo" style="width:180px; margin-bottom:20px;">
+          <h2 style="color:var(--brand); margin-top:0;">Secure Password Setup</h2>
+          <p style="color:#666; font-size:14px; margin-bottom:20px;">Welcome! Please create your admin password to continue.</p>
+          
+          <input type="password" id="initial-password" placeholder="New Password" style="padding:15px; font-size:18px;">
+          <button class="btn" onclick="saveInitialPassword()" id="btn-save-initial" style="margin-top:20px;">Set Password & Login</button>
       </div>
   </div>
 
@@ -172,9 +177,9 @@
       <h2 style="font-family:'Fresh', cursive; font-size:28px; color:var(--brand); margin-top:0;">Admin Access</h2>
       
       <div id="login-form-standard">
-          <input type="email" id="email" placeholder="Email">
-          <input type="password" id="password" placeholder="Password">
-          <button class="btn" onclick="handleLogin()" style="margin-top:20px;">Secure Login</button>
+          <input type="email" id="admin-email" placeholder="Email">
+          <input type="password" id="admin-password" placeholder="Password">
+          <button id="btn-login" class="btn" onclick="handleLogin()" style="margin-top:20px;">Secure Login</button>
           <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px; font-size:13px;">
               <a href="#" onclick="showForgot()" style="color:var(--brand); font-weight:600;">Forgot Password?</a>
           </div>
@@ -341,7 +346,7 @@
       <div id="settings-area" style="margin-top:40px; border-top:1px solid #e2e8f0; padding-top:20px;">
         <h3 style="font-size:16px; margin:0 0 15px 0; color:var(--brand);">Account Settings</h3>
         <div class="input-group">
-          <label>Create / Update Password</label>
+          <label>Update Password</label>
           <input type="password" id="new-password" placeholder="Enter New Password">
           <button class="btn" onclick="updatePassword()" style="background:#475569; margin-top:8px;">Save Password</button>
         </div>
@@ -354,50 +359,39 @@
   </div>
 
   <script>
-    // --- CONFIGURATION ---
     const SUPABASE_URL = 'https://domtvkfulaimxsbyvryd.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- CAPTURE URL HASH IMMEDIATELY (Before Supabase cleans it) ---
+    // --- CRITICAL: CAPTURE URL HASH IMMEDIATELY ---
     const initialHash = window.location.hash;
-
-    // --- GLOBAL STATE ---
     let currentMenuContext = "Loading menu...";
 
-    // --- SECURE AUTHENTICATION ---
     sb.auth.onAuthStateChange(async (event, session) => {
-      // 1. Force Admin View on Password Recovery OR Invite Link
-      const isInviteOrRecovery = (event === 'PASSWORD_RECOVERY') || (initialHash && (initialHash.includes('type=invite') || initialHash.includes('type=recovery')));
+      // 1. DETECT INVITE OR RECOVERY (Force Password Setup)
+      const isRecovery = (event === 'PASSWORD_RECOVERY');
+      const isInviteLink = (initialHash && (initialHash.includes('type=invite') || initialHash.includes('type=recovery')));
 
-      if (isInviteOrRecovery) {
-          document.getElementById('btn-open-dashboard').style.display = 'block';
-          toggleView('view-admin');
+      if (isRecovery || (session && isInviteLink)) {
+          // Hide everything, show ONLY the secret password page
+          document.querySelectorAll('.wrap').forEach(el => el.style.display = 'none');
+          document.getElementById('view-reset-password').style.display = 'flex';
           
-          // Auto-Scroll to Password Box with Highlight
-          setTimeout(() => {
-              const settings = document.getElementById('settings-area');
-              const input = document.getElementById('new-password');
-              if(settings) settings.scrollIntoView({ behavior: 'smooth' });
-              if(input) {
-                  input.classList.add('highlight-focus');
-                  input.focus();
-              }
-              alert("Welcome! Please scroll down to 'Account Settings' to create your password.");
-          }, 800);
-          
+          // Allow internal navigation to work
           loadAdminData(); loadSuggestionsList(); loadRecipeLibrary(); loadClients();
-          return; // Stop here, don't run the other checks
+          return; 
       }
 
-      // 2. Normal Login Check
+      // 2. NORMAL SESSION CHECK
       if (session) {
         const { data: adminRecord } = await sb.from('admins').select('email').eq('email', session.user.email).single();
+        
         if (adminRecord) {
+            // Is Admin -> Show Dashboard
             document.getElementById('btn-open-dashboard').style.display = 'block';
             loadAdminData(); loadSuggestionsList(); loadRecipeLibrary(); loadClients();
         } else {
-            // VERIFIED CUSTOMER (Suggestion Box) -> Unlock Box
+            // Not Admin -> Is it just a suggestion box user?
             document.getElementById('btn-open-dashboard').style.display = 'none';
             toggleView('view-public');
             unlockSuggestionBox(session.user.email);
@@ -411,7 +405,28 @@
       loadPublicData();
     });
 
-    // --- AI FUNCTIONS (POST METHOD) ---
+    // --- NEW: SAVE PASSWORD FROM SECRET PAGE ---
+    async function saveInitialPassword() {
+        const password = document.getElementById('initial-password').value;
+        if(!password) return alert("Please enter a password.");
+        
+        const btn = document.getElementById('btn-save-initial');
+        btn.innerText = "Saving..."; btn.disabled = true;
+
+        const { error } = await sb.auth.updateUser({ password: password });
+        
+        if(error) {
+            alert("Error: " + error.message);
+            btn.innerText = "Set Password & Login"; btn.disabled = false;
+        } else {
+            alert("Password Set! Logging you in...");
+            // Redirect to standard admin dashboard
+            window.location.hash = ""; // clear the invite hash
+            toggleView('view-admin');
+        }
+    }
+
+    // --- AI FUNCTIONS ---
     async function magicRewrite(inputId) {
         const inputEl = document.getElementById(inputId);
         const originalText = inputEl.value;
@@ -461,7 +476,7 @@
         } catch(e) { container.innerHTML = "Error generating list."; }
     }
 
-    // --- CHEF BOT LOGIC (POST METHOD) ---
+    // --- CHEF BOT LOGIC ---
     function toggleChat() {
         const win = document.getElementById('chef-bot-window');
         win.style.display = (win.style.display === 'flex' ? 'none' : 'flex');
@@ -623,84 +638,4 @@
     }
     async function deleteRecipe(id) { if(confirm("Delete?")) await sb.from('recipes').delete().eq('id', id); loadRecipeLibrary(); loadAdminData(); }
     async function loadSuggestionsList() {
-        const { data: list } = await sb.from('suggestions').select('*').order('created_at', {ascending: false});
-        const container = document.getElementById('admin-suggestion-list');
-        if(list && list.length) container.innerHTML = list.map(item => `<div class="admin-suggestion-item"><div style="font-weight:bold; color:var(--brand);">${item.email || 'Anonymous'}</div><div style="margin-top:4px;">${item.content}</div></div>`).join('');
-        else container.innerHTML = "No suggestions.";
-    }
-
-    async function regenerateActiveImage(slotPrefix) {
-        const mainDish = document.getElementById(`${slotPrefix}-main`).value;
-        if(!mainDish) return alert("Enter dish name first.");
-        const btn = event.target; btn.innerText = "🎲 Rolling...";
-        
-        const newSeed = Math.floor(Math.random() * 9999);
-        const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${mainDish}, professional food photography, 4k`)}?width=800&height=600&nologo=true&seed=${newSeed}`;
-        
-        const { data: activeMenu } = await sb.from('menus').select('*').eq('is_active', true).single();
-        if(activeMenu) {
-            const updatedData = activeMenu.menu_data;
-            updatedData[`${slotPrefix}_img`] = newUrl; 
-            await sb.from('menus').update({ menu_data: updatedData }).eq('id', activeMenu.id);
-            alert("Image updated! Check the public menu.");
-        } else { alert("No active menu found. Publish one first!"); }
-        btn.innerText = "🎲 Reroll Image";
-    }
-
-    async function saveMenu() {
-      const weekLabel = document.getElementById('edit-week').value;
-      const m1_main = document.getElementById('m1-main').value; const m1_side = document.getElementById('m1-side').value;
-      const m2_main = document.getElementById('m2-main').value; const m2_side = document.getElementById('m2-side').value;
-      const m3_main = document.getElementById('m3-main').value; const m3_side = document.getElementById('m3-side').value;
-      
-      if (!weekLabel || !m1_main) return alert("Fill out menu.");
-      
-      const btn = document.querySelector('.btn-green');
-      btn.innerText = "Publishing & Generating Images...";
-      btn.disabled = true;
-
-      await sb.from('menus').update({ is_active: false }).eq('is_active', true);
-      
-      const saveR = async (n, c) => { if(!n) return; const { data } = await sb.from('recipes').select('id').eq('name', n).single(); if(!data) await sb.from('recipes').insert({ name: n, category: c }); };
-      await saveR(m1_main, 'main'); await saveR(m1_side, 'side'); await saveR(m2_main, 'main'); await saveR(m2_side, 'side'); await saveR(m3_main, 'main'); await saveR(m3_side, 'side');
-      
-      const getFixedUrl = (n) => `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${n}, professional food photography, 4k`)}?width=800&height=600&nologo=true&seed=${Math.floor(Math.random() * 9999)}`;
-      
-      const menuData = { 
-          m1_main, m1_side, m1_img: getFixedUrl(m1_main),
-          m2_main, m2_side, m2_img: getFixedUrl(m2_main),
-          m3_main, m3_side, m3_img: getFixedUrl(m3_main)
-      };
-
-      const { error } = await sb.from('menus').insert({ week_label: weekLabel, is_active: true, menu_data: menuData });
-      
-      if(error) { alert(error.message); btn.disabled=false; btn.innerText="Publish Live Menu"; } 
-      else { alert("Menu Published & Images Generated!"); location.reload(); }
-    }
-
-    function toggleView(id) { ['view-login', 'view-public', 'view-admin', 'view-archive'].forEach(v => { const el = document.getElementById(v); if(el) el.style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none'); }); }
-    function showAdmin() { toggleView('view-admin'); }
-    function showLogin() { toggleView('view-login'); }
-    function showPublic() { toggleView('view-public'); }
-    function showArchive() { toggleView('view-archive'); loadArchiveData(); }
-
-    async function handleLogin() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) alert(error.message); 
-    }
-    async function handleLogout() { 
-        await sb.auth.signOut(); 
-        document.getElementById('access-denied-modal').style.display = 'none';
-        location.reload();
-    }
-    async function updatePassword() {
-      const newPassword = document.getElementById('new-password').value;
-      if (!newPassword) return alert("Enter password.");
-      const { error } = await sb.auth.updateUser({ password: newPassword });
-      if (error) alert(error.message); else { alert("Saved!"); document.getElementById('new-password').value = ""; }
-    }
-  </script>
-</body>
-</html>
+        const {
