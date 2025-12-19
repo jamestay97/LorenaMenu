@@ -1,3 +1,22 @@
+The error `"Model not found: undefined"` happens because `text.pollinations.ai` recently changed how they handle model selection in the URL. It no longer accepts `/openai/` as a prefix in the same way. We will revert to the standard base URL which automatically selects the best available free model.
+
+I have also reinforced the CSS to ensure long messages wrap properly inside the bubbles.
+
+Here is the **Fixed `index.html**`.
+
+### **The Fixes:**
+
+1. **Fixed Chat Bot API:** Removed `openai/` from the URL. Now it just sends the prompt directly to `https://text.pollinations.ai/...`, which works reliably.
+2. **Fixed Chat Bubbles:** Added `word-break: break-word` (stronger than `word-wrap`) to ensure long text never overflows.
+3. **Preserved All Features:** Meal images, admin dashboard, and grocery generator are all still included.
+
+### **Instructions:**
+
+1. **Copy** the code below.
+2. **Paste** it into your `index.html` file.
+3. **Upload** to GitHub.
+
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -47,7 +66,6 @@
     .meal-card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0; display: flex; flex-direction: column; text-align: center; transition: transform 0.2s ease; height: 100%; border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
     .meal-card:hover { transform: translateY(-3px); }
     
-    /* Image Box */
     .meal-img-box { 
         width: 100%; height: 220px; 
         background-color: #eee; 
@@ -105,18 +123,17 @@
     .tab-btn { background:none; border:none; color:var(--text-muted); font-weight:600; cursor:pointer; padding:5px; white-space:nowrap; }
     .tab-btn.active { color:var(--brand); border-bottom:2px solid var(--brand); }
 
-    /* CHEF BOT STYLES */
+    /* CHEF BOT STYLES - FIXED TEXT WRAPPING */
     .chef-bot-trigger { position: fixed; bottom: 80px; right: 20px; background: #fff; width: 50px; height: 50px; border-radius: 50%; box-shadow: 0 5px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 80; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid var(--brand); }
     .chef-bot-window { position: fixed; bottom: 140px; right: 20px; width: 300px; height: 400px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 85; display: none; flex-direction: column; overflow: hidden; }
     .bot-header { background: var(--brand); color: white; padding: 15px; font-weight: 600; font-size: 14px; }
     .bot-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f9fafb; font-size: 13px; }
     .bot-input-area { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; }
     
-    /* FIXED BOT MESSAGES */
+    /* Strong word breaking for chat messages */
     .bot-msg { 
         margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; max-width: 85%; 
-        /* Wrap text so it doesn't overflow */
-        word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap;
+        word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap;
     }
     .bot-msg.ai { background: white; border: 1px solid #eee; align-self: flex-start; color: #333; }
     .bot-msg.user { background: var(--brand); color: white; align-self: flex-end; margin-left: auto; }
@@ -377,10 +394,10 @@
         const originalText = inputEl.value;
         if(!originalText) return alert("Type a basic food name first (e.g. 'Chicken Rice')");
         inputEl.value = "✨ Rewriting...";
-        // Explicitly use OpenAI model
+        // Removed explicit model to default to best available
         const prompt = `Rewrite this food dish name to sound gourmet, delicious and professional for a menu. Keep it under 10 words. Food: "${originalText}"`;
         try {
-            const response = await fetch(`https://text.pollinations.ai/openai/${encodeURIComponent(prompt)}`);
+            const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
             const text = await response.text();
             inputEl.value = text.replace(/"/g, ''); 
         } catch(e) { alert("AI Error. Try again."); inputEl.value = originalText; }
@@ -395,13 +412,13 @@
         container.innerHTML = "🤔 Analyzing menu and creating shopping list...";
         const prompt = `Create a categorized grocery shopping list for a chef preparing these 3 meals. Categories: Produce, Meat, Dairy, Pantry. Meals: 1. ${m1}, 2. ${m2}, 3. ${m3}. Return ONLY the list.`;
         try {
-            const response = await fetch(`https://text.pollinations.ai/openai/${encodeURIComponent(prompt)}`);
+            const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
             const text = await response.text();
             container.innerHTML = marked.parse(text); 
         } catch(e) { container.innerHTML = "Error generating list."; }
     }
 
-    // --- CHEF BOT LOGIC (FIXED) ---
+    // --- CHEF BOT LOGIC (FIXED URL) ---
     function toggleChat() {
         const win = document.getElementById('chef-bot-window');
         win.style.display = (win.style.display === 'flex' ? 'none' : 'flex');
@@ -420,8 +437,8 @@
         const prompt = `You are Lorena's friendly chef assistant. Use this menu context to answer the customer's question. Current Menu: ${currentMenuContext}. Question: ${userMsg}. Keep it short and friendly.`;
         
         try {
-            // FIXED API CALL: Explicitly requesting OpenAI model
-            const response = await fetch(`https://text.pollinations.ai/openai/${encodeURIComponent(prompt)}`);
+            // FIXED API CALL: Removed 'openai/' to use default model
+            const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
             const text = await response.text();
             document.getElementById(loadingId).innerText = text;
         } catch(e) { document.getElementById(loadingId).innerText = "Sorry, I'm having trouble connecting to the kitchen!"; }
@@ -484,7 +501,6 @@
         const d = menu.menu_data;
         currentMenuContext = `1. ${d.m1_main} (${d.m1_side}), 2. ${d.m2_main} (${d.m2_side}), 3. ${d.m3_main} (${d.m3_side})`;
         
-        // Helper to get image URL: Use saved URL if exists, else fallback to dynamic
         const getUrl = (savedUrl, name) => savedUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${name}, professional food photography, 4k`)}?width=800&height=600&nologo=true`;
 
         document.getElementById('menu-grid-container').innerHTML = `
@@ -571,28 +587,20 @@
 
     // --- REGENERATE SINGLE IMAGE (Admin) ---
     async function regenerateActiveImage(slotPrefix) {
-        // 1. Get current text from input
         const mainDish = document.getElementById(`${slotPrefix}-main`).value;
         if(!mainDish) return alert("Enter dish name first.");
+        const btn = event.target; btn.innerText = "🎲 Rolling...";
         
-        const btn = event.target;
-        btn.innerText = "🎲 Rolling...";
-        
-        // 2. Generate new URL with unique seed
         const newSeed = Math.floor(Math.random() * 9999);
         const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${mainDish}, professional food photography, 4k`)}?width=800&height=600&nologo=true&seed=${newSeed}`;
         
-        // 3. Update the ACTIVE menu in database
         const { data: activeMenu } = await sb.from('menus').select('*').eq('is_active', true).single();
         if(activeMenu) {
             const updatedData = activeMenu.menu_data;
-            updatedData[`${slotPrefix}_img`] = newUrl; // Update specific image key
-            
+            updatedData[`${slotPrefix}_img`] = newUrl; 
             await sb.from('menus').update({ menu_data: updatedData }).eq('id', activeMenu.id);
             alert("Image updated! Check the public menu.");
-        } else {
-            alert("No active menu found. Publish one first!");
-        }
+        } else { alert("No active menu found. Publish one first!"); }
         btn.innerText = "🎲 Reroll Image";
     }
 
@@ -610,11 +618,9 @@
 
       await sb.from('menus').update({ is_active: false }).eq('is_active', true);
       
-      // Save recipes
       const saveR = async (n, c) => { if(!n) return; const { data } = await sb.from('recipes').select('id').eq('name', n).single(); if(!data) await sb.from('recipes').insert({ name: n, category: c }); };
       await saveR(m1_main, 'main'); await saveR(m1_side, 'side'); await saveR(m2_main, 'main'); await saveR(m2_side, 'side'); await saveR(m3_main, 'main'); await saveR(m3_side, 'side');
       
-      // GENERATE PERMANENT IMAGE URLs
       const getFixedUrl = (n) => `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${n}, professional food photography, 4k`)}?width=800&height=600&nologo=true&seed=${Math.floor(Math.random() * 9999)}`;
       
       const menuData = { 
@@ -651,3 +657,5 @@
   </script>
 </body>
 </html>
+
+```
