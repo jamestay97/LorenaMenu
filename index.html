@@ -141,6 +141,7 @@
     <div class="suggestion-card" id="suggestion-box-container">
         <h3 style="color:var(--brand); margin:0;">Have a Craving?</h3>
         <p style="color:var(--text-muted); font-size:14px; margin:5px 0 15px;">Verify your email to suggest a meal.</p>
+        
         <input type="email" id="verify-email" class="suggestion-input" placeholder="Enter your email" style="margin-bottom:0;">
         <button id="send-link-btn" onclick="sendMagicLink()" class="btn" style="width:auto; padding: 10px 30px;">Send Verification Link</button>
         <p style="font-size:11px; color:#999; margin-top:10px;">We will send a secure link to your inbox.</p>
@@ -191,7 +192,7 @@
 
       <div id="tab-editor">
           <div class="input-group">
-            <label>Menu Start Date (Defaults to Monday)</label>
+            <label>Menu Start Date (Any day in the week)</label>
             <input type="date" id="date-picker" onchange="autoFillDate()">
             <input type="text" id="edit-week" placeholder="e.g. Oct 27 - Nov 1" style="background:#f8fafc;">
           </div>
@@ -259,7 +260,7 @@
     // --- SECURE AUTHENTICATION ---
     sb.auth.onAuthStateChange(async (event, session) => {
       if (session) {
-        // Query database to see if this user is an Admin
+        // Logged in! Query database to see if this user is an Admin
         const { data: adminRecord } = await sb
             .from('admins')
             .select('email')
@@ -267,17 +268,20 @@
             .single();
 
         if (adminRecord) {
+            // User IS in the 'admins' table -> Show Admin Dashboard
             toggleView('view-admin');
             loadAdminData();
             loadSuggestionsList(); 
             loadRecipeLibrary(); 
             loadClients();
         } else {
+            // User is NOT in 'admins' table -> Treat as Customer
             toggleView('view-public');
             loadPublicData();
             unlockSuggestionBox(session.user.email);
         }
       } else {
+        // Not logged in -> Show Public + Locked Box
         toggleView('view-public');
         loadPublicData();
         lockSuggestionBox();
@@ -323,7 +327,9 @@
         if(draft) document.getElementById('suggestion-text').value = draft;
     }
 
-    function lockSuggestionBox() { }
+    function lockSuggestionBox() {
+        // Default HTML is locked, so we do nothing
+    }
 
     async function submitSuggestion() {
         const textBox = document.getElementById('suggestion-text');
@@ -404,39 +410,29 @@
        } else { list.innerHTML = `<div style="text-align:center; color:#ccc; padding:30px;">No past menus found.</div>`; }
     }
 
-    // --- ADMIN DASHBOARD LOGIC (CRM UPDATED) ---
+    // --- ADMIN DASHBOARD LOGIC ---
     async function loadClients() {
         const { data: clients } = await sb.from('clients').select('*').order('name', {ascending: true});
         const container = document.getElementById('clients-list');
         if(clients && clients.length) {
             container.innerHTML = clients.map(c => `
                 <div class="recipe-item">
-                    <div>
-                        <strong>${c.name}</strong><br>
-                        <span style="font-size:12px; color:#666;">${c.phone || '-'}</span><br>
-                        <span style="font-size:12px; color:#666;">${c.email || '-'}</span>
-                    </div>
+                    <div><strong>${c.name}</strong><br><span style="font-size:12px; color:#666;">${c.phone}</span><br><span style="font-size:12px; color:#666;">${c.email || ''}</span></div>
                     <button class="btn btn-delete" onclick="deleteClient(${c.id})">Remove</button>
                 </div>`).join('');
         } else { container.innerHTML = "No clients added yet."; }
     }
-    
     async function addClient() {
         const name = document.getElementById('client-name').value.trim();
         const phone = document.getElementById('client-phone').value.trim();
         const email = document.getElementById('client-email').value.trim();
-        
-        if(!name) return alert("Client name is required.");
-        
+        if(!name) return alert("Please enter name.");
         await sb.from('clients').insert({ name, phone, email });
-        
-        // Reset fields
         document.getElementById('client-name').value = ''; 
         document.getElementById('client-phone').value = '';
         document.getElementById('client-email').value = '';
         loadClients();
     }
-    
     async function deleteClient(id) { if(!confirm("Remove this client?")) return; await sb.from('clients').delete().eq('id', id); loadClients(); }
 
     async function copyAllEmails() {
@@ -470,12 +466,24 @@
     function autoFillDate() {
         const picker = document.getElementById('date-picker');
         if(!picker.value) return;
+        
         const parts = picker.value.split('-');
-        const start = new Date(parts[0], parts[1]-1, parts[2]); 
-        const end = new Date(start);
-        end.setDate(start.getDate() + 4); 
+        const picked = new Date(parts[0], parts[1]-1, parts[2]); 
+        
+        // INTELLIGENT WEEK FIX
+        // Find the Monday of the selected week
+        const day = picked.getDay(); // 0 (Sun) to 6 (Sat)
+        // If Sun(0), Monday was 6 days ago. If Mon(1), Monday is today.
+        const diffToMon = day === 0 ? 6 : day - 1; 
+        
+        const monday = new Date(picked);
+        monday.setDate(picked.getDate() - diffToMon);
+        
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        
         const options = { month: 'short', day: 'numeric' };
-        document.getElementById('edit-week').value = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+        document.getElementById('edit-week').value = `${monday.toLocaleDateString('en-US', options)} - ${sunday.toLocaleDateString('en-US', options)}`;
     }
     
     function copyMenuForText() {
