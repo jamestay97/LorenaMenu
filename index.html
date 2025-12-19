@@ -22,11 +22,11 @@
 
     :root {
       /* PALETTE: Deep Forest & Organic */
-      --bg-color: #f4f5f0;    /* Warm distinct off-white */
+      --bg-color: #f4f5f0;    
       --card-bg: #ffffff;
       
       --brand: #1b4d3e;       /* Deep Forest Green */
-      --brand-light: #e6f0eb; /* Very light green for accents */
+      --brand-light: #e6f0eb; 
       
       --text-main: #1d1d1f;   
       --text-muted: #86868b;  
@@ -244,9 +244,9 @@
 
       <div id="tab-editor">
           <div class="input-group">
-            <label>Auto-Generate Date Label (Pick Monday)</label>
+            <label>Menu Start Date (Defaults to Monday)</label>
             <input type="date" id="date-picker" onchange="autoFillDate()">
-            <input type="text" id="edit-week" placeholder="e.g. Oct 27 - Nov 1 (Auto-filled)" style="background:#f8fafc;">
+            <input type="text" id="edit-week" placeholder="e.g. Oct 27 - Nov 1" style="background:#f8fafc;">
           </div>
 
           <div class="input-group">
@@ -394,15 +394,34 @@
         event.target.classList.add('active');
     }
 
+    function setDefaultDate() {
+        const picker = document.getElementById('date-picker');
+        if(picker.value) return; // Don't overwrite if user already picked a date
+
+        const d = new Date();
+        // Calculate the upcoming Monday (or today if today is Monday)
+        // (1 + 7 - day) % 7 calculates days to add to get to Monday (1)
+        const day = d.getDay();
+        const diff = (1 - day + 7) % 7; 
+        
+        // If today is Sunday (0), diff is 1. If Monday (1), diff is 0. If Tues (2), diff is 6.
+        d.setDate(d.getDate() + diff); 
+        
+        picker.valueAsDate = d;
+        autoFillDate(); // Trigger the text label update
+    }
+
     function autoFillDate() {
         const picker = document.getElementById('date-picker');
         if(!picker.value) return;
         
-        const start = new Date(picker.value + 'T00:00:00'); // Force local time
+        // Force Date object to interpret as local time to avoid timezone shifts
+        const parts = picker.value.split('-');
+        const start = new Date(parts[0], parts[1]-1, parts[2]); 
+        
         const end = new Date(start);
         end.setDate(start.getDate() + 4); // Add 4 days to get Friday
         
-        // Format: "Oct 27"
         const options = { month: 'short', day: 'numeric' };
         const label = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
         
@@ -410,6 +429,8 @@
     }
 
     async function loadAdminData() {
+      setDefaultDate(); // <--- Run Smart Date Logic
+
       // Autocomplete lists
       const { data: recipes } = await sb.from('recipes').select('*');
       const mList = document.getElementById('list-mains');
