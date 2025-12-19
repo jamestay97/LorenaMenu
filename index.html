@@ -4,35 +4,28 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- ADMIN EMAIL CONFIG ---
-    // Make sure this matches the email you are logging in with!
-    // If you want to allow YOUR email too, you can add it here.
-    const ADMIN_EMAILS = ['loreenaolivar03@gmail.com', 'jamestay97@gmail.com']; 
-
     // --- INTELLIGENT INITIALIZATION ---
-    sb.auth.onAuthStateChange((event, session) => {
+    sb.auth.onAuthStateChange(async (event, session) => {
       if (session) {
-        const userEmail = session.user.email.toLowerCase(); // Convert to lowercase
-        
-        // Check if the logged-in user is in the Allowed Admins list
-        // We check if the email exists in our array (case-insensitive)
-        const isAdmin = ADMIN_EMAILS.some(email => email.toLowerCase() === userEmail);
+        // Logged in! Now we ask the Database: "Is this user an admin?"
+        const { data: adminRecord } = await sb
+            .from('admins')
+            .select('email')
+            .eq('email', session.user.email)
+            .single();
 
-        if (isAdmin) {
-            // It's an Admin -> Show Dashboard
+        if (adminRecord) {
+            // Database confirmed: This user IS an admin
             toggleView('view-admin');
             loadAdminData();
             loadSuggestionsList(); 
             loadRecipeLibrary(); 
             loadClients();
         } else {
-            // It's a Customer -> Show Public + Unlocked Suggestion Box
-            // Optional: Alert just for you to know why it failed (remove later)
-            // alert("Logged in as: " + userEmail + ". Redirecting to Customer View.");
-            
+            // Database said: No record found. Must be a Customer.
             toggleView('view-public');
             loadPublicData();
-            unlockSuggestionBox(userEmail);
+            unlockSuggestionBox(session.user.email);
         }
       } else {
         // Not logged in -> Show Public + Locked Suggestion Box
@@ -233,4 +226,36 @@
     async function saveMenu() {
       const weekLabel = document.getElementById('edit-week').value;
       const m1_main = document.getElementById('m1-main').value; const m1_side = document.getElementById('m1-side').value;
-      const m2_main = document.getElementById('m2-main').value; const m2_side = document
+      const m2_main = document.getElementById('m2-main').value; const m2_side = document.getElementById('m2-side').value;
+      const m3_main = document.getElementById('m3-main').value; const m3_side = document.getElementById('m3-side').value;
+      if (!weekLabel || !m1_main) return alert("Please fill out the menu.");
+      const btn = document.querySelector('.btn-green');
+      if(btn) { btn.textContent = "Publishing..."; btn.disabled = true; }
+      await sb.from('menus').update({ is_active: false }).eq('is_active', true);
+      const saveR = async (n, c) => { if(!n) return; const { data } = await sb.from('recipes').select('id').eq('name', n).single(); if(!data) await sb.from('recipes').insert({ name: n, category: c }); };
+      await saveR(m1_main, 'main'); await saveR(m1_side, 'side'); await saveR(m2_main, 'main'); await saveR(m2_side, 'side'); await saveR(m3_main, 'main'); await saveR(m3_side, 'side');
+      const { error } = await sb.from('menus').insert({ week_label: weekLabel, is_active: true, menu_data: { m1_main, m1_side, m2_main, m2_side, m3_main, m3_side } });
+      if(error) { alert(error.message); if(btn){btn.disabled=false; btn.textContent="Publish Live Menu";} } else { location.reload(); }
+    }
+
+    function toggleView(id) { ['view-login', 'view-public', 'view-admin', 'view-archive'].forEach(v => { const el = document.getElementById(v); if(el) el.style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none'); }); }
+    function showLogin() { toggleView('view-login'); }
+    function showPublic() { toggleView('view-public'); }
+    function showArchive() { toggleView('view-archive'); loadArchiveData(); }
+
+    async function handleLogin() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) alert(error.message); 
+    }
+    async function handleLogout() { await sb.auth.signOut(); }
+    async function updatePassword() {
+      const newPassword = document.getElementById('new-password').value;
+      if (!newPassword) return alert("Please type a password first.");
+      const btn = event.target; const originalText = btn.innerText; btn.innerText = "Updating..."; btn.disabled = true;
+      const { error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) alert("Error: " + error.message); else { alert("Success! Password saved."); document.getElementById('new-password').value = ""; }
+      btn.innerText = originalText; btn.disabled = false;
+    }
+  </script>
