@@ -46,8 +46,26 @@
     @media (min-width: 768px) { .menu-grid { grid-template-columns: repeat(3, 1fr); align-items: stretch; } }
 
     /* --- CARDS --- */
-    .meal-card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 30px; display: flex; flex-direction: column; text-align: center; transition: transform 0.2s ease; height: 100%; border: 1px solid rgba(0,0,0,0.03); }
+    .meal-card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0; display: flex; flex-direction: column; text-align: center; transition: transform 0.2s ease; height: 100%; border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
     .meal-card:hover { transform: translateY(-3px); }
+    
+    /* NEW: AI IMAGE STYLES */
+    .meal-img-box {
+        width: 100%;
+        height: 200px;
+        background-color: #eee;
+        overflow: hidden;
+        position: relative;
+    }
+    .meal-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0; /* Hidden until loaded */
+        transition: opacity 0.5s ease;
+    }
+    .meal-content { padding: 25px; display:flex; flex-direction:column; align-items:center; }
+
     .meal-number { font-size: 11px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; background: var(--brand-light); display: inline-block; padding: 4px 10px; border-radius: 20px; align-self: center; }
     .meal-title { font-size: 20px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.3; }
     .meal-side { font-size: 15px; color: var(--text-muted); margin: 0; }
@@ -197,13 +215,11 @@
 
       <div id="tab-clients" style="display:none;">
           <h3 style="font-size:16px; margin:0 0 10px 0; color:var(--brand);">My Client List</h3>
-          
           <div class="input-group" style="background:#f9f9f9; padding:15px; border-radius:10px; margin-bottom:20px;">
               <input type="text" id="client-name" placeholder="Client Name" style="margin-top:0; margin-bottom:5px;">
               <input type="tel" id="client-phone" placeholder="Phone Number" style="margin-top:0;">
               <button class="btn" style="margin-top:10px; font-size:12px;" onclick="addClient()">+ Add Client</button>
           </div>
-
           <div id="clients-list" style="max-height:300px; overflow-y:auto;">Loading clients...</div>
       </div>
 
@@ -244,14 +260,14 @@
         loadAdminData();
         loadSuggestionsList(); 
         loadRecipeLibrary(); 
-        loadClients(); // Load CRM
+        loadClients(); 
       } else {
         toggleView('view-public');
         loadPublicData();
       }
     });
 
-    // --- 3. PUBLIC DATA LOGIC ---
+    // --- 3. PUBLIC DATA LOGIC (NOW WITH AI IMAGES) ---
     async function loadPublicData() {
       const params = new URLSearchParams(window.location.search);
       const archiveId = params.get('id');
@@ -269,10 +285,49 @@
       if (menu) {
         document.getElementById('week-display').textContent = menu.week_label;
         const d = menu.menu_data;
+        
+        // --- AI IMAGE GENERATION LOGIC ---
+        // This creates a URL that generates an image on the fly based on the food name
+        const getAiImage = (foodName) => {
+            const prompt = `delicious gourmet ${foodName}, professional food photography, 4k, studio lighting, depth of field`;
+            // Encode the prompt for URL
+            const cleanPrompt = encodeURIComponent(prompt);
+            return `https://image.pollinations.ai/prompt/${cleanPrompt}?width=800&height=600&nologo=true`;
+        };
+
         document.getElementById('menu-grid-container').innerHTML = `
-          <div class="meal-card"><span class="meal-number">Option 01</span><h3 class="meal-title">${d.m1_main}</h3><p class="meal-side">${d.m1_side}</p></div>
-          <div class="meal-card"><span class="meal-number">Option 02</span><h3 class="meal-title">${d.m2_main}</h3><p class="meal-side">${d.m2_side}</p></div>
-          <div class="meal-card"><span class="meal-number">Option 03</span><h3 class="meal-title">${d.m3_main}</h3><p class="meal-side">${d.m3_side}</p></div>
+          <div class="meal-card">
+            <div class="meal-img-box">
+                <img src="${getAiImage(d.m1_main)}" class="meal-img" onload="this.style.opacity=1">
+            </div>
+            <div class="meal-content">
+                <span class="meal-number">Option 01</span>
+                <h3 class="meal-title">${d.m1_main}</h3>
+                <p class="meal-side">${d.m1_side}</p>
+            </div>
+          </div>
+          
+          <div class="meal-card">
+            <div class="meal-img-box">
+                <img src="${getAiImage(d.m2_main)}" class="meal-img" onload="this.style.opacity=1">
+            </div>
+             <div class="meal-content">
+                <span class="meal-number">Option 02</span>
+                <h3 class="meal-title">${d.m2_main}</h3>
+                <p class="meal-side">${d.m2_side}</p>
+            </div>
+          </div>
+          
+          <div class="meal-card">
+            <div class="meal-img-box">
+                <img src="${getAiImage(d.m3_main)}" class="meal-img" onload="this.style.opacity=1">
+            </div>
+             <div class="meal-content">
+                <span class="meal-number">Option 03</span>
+                <h3 class="meal-title">${d.m3_main}</h3>
+                <p class="meal-side">${d.m3_side}</p>
+            </div>
+          </div>
         `;
       } else {
         document.getElementById('week-display').style.display = 'none';
@@ -491,4 +546,13 @@
       if (!newPassword) return alert("Please type a password first.");
       const btn = event.target;
       const originalText = btn.innerText;
-      btn
+      btn.innerText = "Updating...";
+      btn.disabled = true;
+      const { error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) alert("Error: " + error.message);
+      else { alert("Success! Password saved."); document.getElementById('new-password').value = ""; }
+      btn.innerText = originalText; btn.disabled = false;
+    }
+  </script>
+</body>
+</html>
