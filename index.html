@@ -157,6 +157,15 @@
       </div>
   </div>
 
+  <div id="access-denied-modal" class="modal-overlay" style="z-index: 300;">
+      <div class="modal-box" style="text-align:center;">
+          <h2 style="color:#b91c1c; margin-top:0;">Access Denied</h2>
+          <p>You are logged in, but your email is not in the Admin list.</p>
+          <p style="font-size:12px; color:#666;">If you are Lorena, please add your email to the <code>admins</code> table in Supabase.</p>
+          <button class="btn" onclick="handleLogout()">Log Out</button>
+      </div>
+  </div>
+
   <div id="view-login" class="wrap" style="display:none; justify-content:center;">
     <div class="admin-container" style="text-align:center; width:100%;">
       <img src="logo_optimized_1000-Photoroom.png" alt="Logo" style="width:180px; margin-bottom:20px;">
@@ -350,25 +359,35 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // --- CAPTURE URL HASH IMMEDIATELY (Before Supabase cleans it) ---
+    const initialHash = window.location.hash;
+
     // --- GLOBAL STATE ---
     let currentMenuContext = "Loading menu...";
 
     // --- SECURE AUTHENTICATION ---
     sb.auth.onAuthStateChange(async (event, session) => {
-      // 1. Force Admin View on Password Recovery
-      if (event === 'PASSWORD_RECOVERY' || (session && window.location.hash.includes('type=invite'))) {
+      // 1. Force Admin View on Password Recovery OR Invite Link
+      const isInviteOrRecovery = (event === 'PASSWORD_RECOVERY') || (initialHash && (initialHash.includes('type=invite') || initialHash.includes('type=recovery')));
+
+      if (isInviteOrRecovery) {
           document.getElementById('btn-open-dashboard').style.display = 'block';
           toggleView('view-admin');
+          
+          // Auto-Scroll to Password Box with Highlight
           setTimeout(() => {
               const settings = document.getElementById('settings-area');
               const input = document.getElementById('new-password');
-              settings.scrollIntoView({ behavior: 'smooth' });
-              input.classList.add('highlight-focus');
-              input.focus();
-              alert("Welcome! Please create your password below.");
-          }, 500);
+              if(settings) settings.scrollIntoView({ behavior: 'smooth' });
+              if(input) {
+                  input.classList.add('highlight-focus');
+                  input.focus();
+              }
+              alert("Welcome! Please scroll down to 'Account Settings' to create your password.");
+          }, 800);
+          
           loadAdminData(); loadSuggestionsList(); loadRecipeLibrary(); loadClients();
-          return;
+          return; // Stop here, don't run the other checks
       }
 
       // 2. Normal Login Check
@@ -378,12 +397,13 @@
             document.getElementById('btn-open-dashboard').style.display = 'block';
             loadAdminData(); loadSuggestionsList(); loadRecipeLibrary(); loadClients();
         } else {
-            // VERIFIED CUSTOMER (Suggestion Box) -> Unlock Box, but show Public View
+            // VERIFIED CUSTOMER (Suggestion Box) -> Unlock Box
             document.getElementById('btn-open-dashboard').style.display = 'none';
             toggleView('view-public');
             unlockSuggestionBox(session.user.email);
         }
       } else {
+        // Not Logged In
         document.getElementById('btn-open-dashboard').style.display = 'none';
         toggleView('view-public');
         lockSuggestionBox();
@@ -672,9 +692,7 @@
     }
     async function handleLogout() { 
         await sb.auth.signOut(); 
-        // Remove the modal if it was open
-        const modal = document.getElementById('access-denied-modal');
-        if(modal) modal.style.display = 'none';
+        document.getElementById('access-denied-modal').style.display = 'none';
         location.reload();
     }
     async function updatePassword() {
