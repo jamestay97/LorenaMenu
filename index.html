@@ -120,7 +120,7 @@
     .bot-msg.ai { background: white; border: 1px solid #eee; align-self: flex-start; color: #333; }
     .bot-msg.user { background: var(--brand); color: white; align-self: flex-end; margin-left: auto; }
 
-    /* MODALS */
+    /* MODAL */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; }
     .modal-box { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 20px; max-height: 80vh; overflow-y: auto; }
 
@@ -369,7 +369,7 @@
   </div>
 
   <script>
-    // --- GLOBAL FUNCTIONS DEFINED FIRST TO PREVENT CRASHES ---
+    // --- GLOBAL FUNCTIONS TO PREVENT CRASHES ---
     function toggleView(id) { 
         ['view-login', 'view-public', 'view-admin', 'view-archive', 'view-reset-password'].forEach(v => { 
             const el = document.getElementById(v); 
@@ -381,16 +381,16 @@
     function showPublic() { toggleView('view-public'); }
     function showArchive() { toggleView('view-archive'); loadArchiveData(); }
 
-    // --- CONFIGURATION ---
     const SUPABASE_URL = 'https://domtvkfulaimxsbyvryd.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // --- CAPTURE URL HASH IMMEDIATELY ---
     const initialHash = window.location.hash;
     let currentMenuContext = "Loading menu...";
 
     sb.auth.onAuthStateChange(async (event, session) => {
-      // 1. Force Password Setup on Invite
+      // 1. FORCE PASSWORD SETUP ON INVITE/RECOVERY (BYPASS DB CHECK)
       const isRecovery = (event === 'PASSWORD_RECOVERY');
       const isInviteLink = (initialHash && (initialHash.includes('type=invite') || initialHash.includes('type=recovery')));
 
@@ -398,16 +398,18 @@
           document.querySelectorAll('.wrap').forEach(el => el.style.display = 'none');
           document.getElementById('view-reset-password').style.display = 'flex';
           loadAdminData(); loadSuggestionsList(); loadRecipeLibrary(); loadClients();
-          return; 
+          return; // STOP HERE so we don't accidentally redirect elsewhere
       }
 
-      // 2. Normal Login
+      // 2. NORMAL LOGIN
       if (session) {
         const { data: adminRecord } = await sb.from('admins').select('email').eq('email', session.user.email).single();
+        
         if (adminRecord) {
             document.getElementById('btn-open-dashboard').style.display = 'block';
             loadAdminData(); loadSuggestionsList(); loadRecipeLibrary(); loadClients();
         } else {
+            // NOT ADMIN (Verified Suggestion User)
             document.getElementById('btn-open-dashboard').style.display = 'none';
             toggleView('view-public');
             unlockSuggestionBox(session.user.email);
@@ -430,6 +432,7 @@
         else { alert("Password Set! Logging you in..."); window.location.hash = ""; toggleView('view-admin'); }
     }
 
+    // --- AI FUNCTIONS ---
     async function magicRewrite(inputId) {
         const inputEl = document.getElementById(inputId);
         const originalText = inputEl.value;
