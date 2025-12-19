@@ -1,22 +1,3 @@
-The error `"Model not found: undefined"` happens because `text.pollinations.ai` recently changed how they handle model selection in the URL. It no longer accepts `/openai/` as a prefix in the same way. We will revert to the standard base URL which automatically selects the best available free model.
-
-I have also reinforced the CSS to ensure long messages wrap properly inside the bubbles.
-
-Here is the **Fixed `index.html**`.
-
-### **The Fixes:**
-
-1. **Fixed Chat Bot API:** Removed `openai/` from the URL. Now it just sends the prompt directly to `https://text.pollinations.ai/...`, which works reliably.
-2. **Fixed Chat Bubbles:** Added `word-break: break-word` (stronger than `word-wrap`) to ensure long text never overflows.
-3. **Preserved All Features:** Meal images, admin dashboard, and grocery generator are all still included.
-
-### **Instructions:**
-
-1. **Copy** the code below.
-2. **Paste** it into your `index.html` file.
-3. **Upload** to GitHub.
-
-```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -657,5 +638,3 @@ Here is the **Fixed `index.html**`.
   </script>
 </body>
 </html>
-
-```
