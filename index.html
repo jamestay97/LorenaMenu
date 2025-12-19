@@ -28,23 +28,22 @@
       --brand: #1b4d3e;       /* Deep Forest Green */
       --brand-light: #e6f0eb; /* Very light green for accents */
       
-      --text-main: #1d1d1f;   /* Apple-style near-black */
-      --text-muted: #86868b;  /* Apple-style muted grey */
+      --text-main: #1d1d1f;   
+      --text-muted: #86868b;  
       
-      --radius: 20px;         /* Smooth rounded corners */
-      --shadow: 0 10px 30px -10px rgba(0,0,0,0.12); /* Soft, deep shadow */
+      --radius: 20px;         
+      --shadow: 0 10px 30px -10px rgba(0,0,0,0.12);
       
-      --max-width: 980px;     /* Wider for the 3-pillar desktop layout */
+      --max-width: 980px;    
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     body {
       margin: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', sans-serif;
       color: var(--text-main);
       background-color: var(--bg-color);
-      /* Subtle Noise Texture */
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
       line-height: 1.5;
     }
@@ -58,21 +57,9 @@
       flex-direction: column;
     }
 
-    /* --- BRANDING HEADER --- */
-    header {
-      text-align: center;
-      padding: 40px 0 20px;
-    }
-
-    .logo-img {
-      max-width: 320px; /* Slightly larger for the new intricate logo */
-      width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-    }
-
-    /* --- CUSTOM FONT USAGE --- */
+    /* --- BRANDING --- */
+    header { text-align: center; padding: 40px 0 20px; }
+    .logo-img { max-width: 320px; width: 100%; height: auto; display: block; margin: 0 auto; }
     .handwritten-label {
       font-family: 'Fresh', cursive; 
       font-size: 32px;
@@ -80,22 +67,18 @@
       text-align: center;
       margin: 10px 0 25px;
       letter-spacing: 1px;
-      transform: rotate(-2deg); /* Slight tilt for style */
+      transform: rotate(-2deg);
     }
 
-    /* --- LAYOUT GRID (The 3 Pillars) --- */
+    /* --- MENU GRID --- */
     .menu-grid {
       display: grid;
-      grid-template-columns: 1fr; /* Mobile: 1 column */
+      grid-template-columns: 1fr;
       gap: 20px;
       margin-top: 10px;
     }
-
     @media (min-width: 768px) {
-      .menu-grid {
-        grid-template-columns: repeat(3, 1fr); /* Desktop: 3 Pillars */
-        align-items: stretch;
-      }
+      .menu-grid { grid-template-columns: repeat(3, 1fr); align-items: stretch; }
     }
 
     /* --- CARDS --- */
@@ -111,142 +94,78 @@
       height: 100%;
       border: 1px solid rgba(0,0,0,0.03);
     }
-    
     .meal-card:hover { transform: translateY(-3px); }
-
     .meal-number {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--brand);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 15px;
-      background: var(--brand-light);
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      align-self: center;
+      font-size: 11px; font-weight: 700; color: var(--brand); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 15px; background: var(--brand-light);
+      display: inline-block; padding: 4px 10px; border-radius: 20px; align-self: center;
     }
+    .meal-title { font-size: 20px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.3; }
+    .meal-side { font-size: 15px; color: var(--text-muted); margin: 0; }
 
-    .meal-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin: 0 0 10px 0;
-      line-height: 1.3;
-    }
-
-    .meal-side {
-      font-size: 15px;
-      color: var(--text-muted);
-      margin: 0;
-      font-weight: 400;
-      line-height: 1.6;
-    }
-
-    /* --- PRICING & INFO --- */
+    /* --- INFO BAR --- */
     .info-bar {
-      margin-top: 40px;
-      text-align: center;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      align-items: center;
+      margin-top: 40px; text-align: center; background: #ffffff; padding: 20px;
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      display: flex; flex-direction: column; gap: 15px; align-items: center;
     }
-    
     @media (min-width: 600px) {
-      .info-bar {
-        flex-direction: row;
-        justify-content: space-around;
-        text-align: left;
-      }
+      .info-bar { flex-direction: row; justify-content: space-around; text-align: left; }
     }
-
     .price-tag { font-size: 14px; color: var(--text-muted); }
     .price-tag strong { color: var(--brand); font-weight: 700; display:block; font-size:16px;}
 
+    /* --- SUGGESTION BOX --- */
+    .suggestion-card {
+      margin-top: 40px;
+      background: #fff;
+      border: 2px dashed var(--brand); 
+      border-radius: var(--radius);
+      padding: 25px;
+      text-align: center;
+    }
+    .suggestion-input {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      margin-top: 10px;
+      font-size: 16px;
+      resize: vertical;
+    }
+    
     /* --- BUTTONS --- */
     .btn {
-      background: var(--brand);
-      color: white;
-      border: none;
-      padding: 14px 24px;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
-      transition: background 0.2s;
+      background: var(--brand); color: white; border: none; padding: 14px 24px;
+      border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
+      width: 100%; margin-top: 10px; transition: background 0.2s;
     }
     .btn:hover { background: #143d30; }
-    
-    .btn-outline {
-        background: transparent;
-        color: var(--brand);
-        border: 2px solid var(--brand-light);
-    }
-    .btn-outline:hover {
-        background: var(--brand-light);
-    }
+    .btn-outline { background: transparent; color: var(--brand); border: 2px solid var(--brand-light); }
+    .btn-outline:hover { background: var(--brand-light); }
+    .btn-logout { background: transparent; color: var(--text-muted); border: 1px solid #e2e8f0; margin-top: 30px; }
+    .btn-delete { background: #fee2e2; color: #b91c1c; font-size:12px; padding:6px 12px; width:auto; margin-top:0; }
 
-    .btn-logout {
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid #e2e8f0;
-      margin-top: 30px;
-    }
-
-    /* --- ADMIN FORM --- */
-    .admin-container {
-      max-width: 500px;
-      margin: 0 auto;
-      background: white;
-      padding: 30px;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    
+    /* --- ADMIN & UTILS --- */
+    .admin-container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); }
     .input-group { margin-bottom: 20px; }
-    input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 16px;
-      margin-top: 6px;
-      font-family: 'Inter', sans-serif;
-    }
+    input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; margin-top: 6px; font-family: 'Inter', sans-serif; }
     label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-
-    /* --- ARCHIVE SECTION --- */
-    .archive-container {
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    .archive-link {
-      display: block;
-      padding: 15px 20px;
-      background: white;
-      margin-bottom: 10px;
-      border-radius: 12px;
-      color: var(--text-main);
-      text-decoration: none;
-      font-weight: 500;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-      transition: transform 0.1s;
-    }
+    
+    .archive-container { max-width: 600px; margin: 0 auto; }
+    .archive-link { display: block; padding: 15px 20px; background: white; margin-bottom: 10px; border-radius: 12px; color: var(--text-main); text-decoration: none; font-weight: 500; box-shadow: 0 2px 10px rgba(0,0,0,0.03); transition: transform 0.1s; }
     .archive-link:hover { transform: scale(1.01); color:var(--brand); }
+    .expired-banner { background: #fef2f2; color: #b91c1c; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; margin-bottom: 20px; font-size: 14px; }
     
-    .expired-banner {
-      background: #fef2f2; color: #b91c1c; text-align: center; padding: 12px;
-      border-radius: 8px; font-weight: 600; margin-bottom: 20px; font-size: 14px;
-    }
+    .admin-suggestion-item { background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; color: var(--text-main); border-left: 4px solid var(--brand); text-align:left; }
+    .recipe-item { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding:10px 0; font-size:14px; }
     
+    /* Tabs for Admin */
+    .admin-tabs { display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px; }
+    .tab-btn { background:none; border:none; color:var(--text-muted); font-weight:600; cursor:pointer; padding:5px; }
+    .tab-btn.active { color:var(--brand); border-bottom:2px solid var(--brand); }
+
   </style>
 </head>
 <body>
@@ -263,7 +182,6 @@
   </div>
 
   <div id="view-public" class="wrap">
-    
     <header>
       <img src="logo.png" alt="Lorena's Cooking" class="logo-img">
     </header>
@@ -275,30 +193,27 @@
     <div id="week-display" class="handwritten-label">Loading Menu...</div>
 
     <div id="menu-grid-container" class="menu-grid">
-      <div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:40px;">
-        Loading latest meals...
-      </div>
+      <div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:40px;">Loading...</div>
     </div>
 
     <div class="info-bar">
-      <div class="price-tag">
-        Price<br>
-        <strong>10 Meals for $150</strong>
-      </div>
-      <div class="price-tag">
-        Order via Text<br>
-        <strong>813-426-5096</strong>
-      </div>
-      <div class="price-tag">
-        Payment (Zelle)<br>
-        <strong>loreenaolivar03@gmail.com</strong>
-      </div>
+      <div class="price-tag">Price<br><strong>10 Meals for $150</strong></div>
+      <div class="price-tag">Order via Text<br><strong>813-426-5096</strong></div>
+      <div class="price-tag">Payment (Zelle)<br><strong>loreenaolivar03@gmail.com</strong></div>
+    </div>
+    
+    <div class="suggestion-card">
+        <h3 style="color:var(--brand); margin:0;">Have a Craving?</h3>
+        <p style="color:var(--text-muted); font-size:14px; margin:5px 0 0;">Tell Lorena what food you want next!</p>
+        
+        <input type="email" id="suggestion-email" class="suggestion-input" placeholder="Your Email (Required)" required style="margin-bottom:0;">
+        <textarea id="suggestion-text" class="suggestion-input" style="min-height:80px;" placeholder="e.g. I'd love to see Lasagna or Tacos..."></textarea>
+        
+        <button onclick="submitSuggestion()" class="btn" style="width:auto; padding: 10px 30px;">Send Suggestion</button>
     </div>
 
-    <div style="text-align:center; margin-top:50px; padding-top:20px; border-top:1px dashed #e2e8f0;">
-        <button onclick="showArchive()" class="btn btn-outline" style="width:auto; padding: 10px 20px; font-size:14px;">
-            View Past Menus &rarr;
-        </button>
+    <div style="text-align:center; margin-top:30px;">
+        <button onclick="showArchive()" class="btn btn-outline" style="width:auto; padding: 10px 20px; font-size:14px;">View Past Menus &rarr;</button>
     </div>
 
     <div style="text-align:center; margin-top:30px; padding-bottom:20px;">
@@ -311,56 +226,64 @@
           <img src="logo.png" alt="Lorena's Cooking" class="logo-img" style="width:150px;">
           <h2 style="color:var(--brand); margin-top:10px;">Past Menus</h2>
       </header>
-
       <div class="archive-container">
-          <div id="archive-list">
-              <p style="text-align:center; color:var(--text-muted);">Loading history...</p>
-          </div>
-          
-          <button onclick="showPublic()" class="btn" style="background:#475569; margin-top:30px;">
-              &larr; Back to Current Menu
-          </button>
+          <div id="archive-list"><p style="text-align:center;">Loading history...</p></div>
+          <button onclick="showPublic()" class="btn" style="background:#475569; margin-top:30px;">&larr; Back to Current Menu</button>
       </div>
   </div>
 
   <div id="view-admin" class="wrap" style="display:none;">
     <div class="admin-container">
-      <h2 style="margin-top:0; color:var(--brand);">Menu Editor</h2>
+      <h2 style="margin-top:0; color:var(--brand);">Admin Dashboard</h2>
       
-      <div class="input-group">
-        <label>Week Label</label>
-        <input type="text" id="edit-week" placeholder="e.g. Oct 27 - Nov 1">
+      <div class="admin-tabs">
+          <button class="tab-btn active" onclick="switchAdminTab('editor')">Menu Editor</button>
+          <button class="tab-btn" onclick="switchAdminTab('library')">Food Library</button>
+          <button class="tab-btn" onclick="switchAdminTab('requests')">Requests</button>
       </div>
 
-      <div class="input-group">
-        <label>Meal Pillar #1</label>
-        <input list="list-mains" id="m1-main" placeholder="Main Dish">
-        <input list="list-sides" id="m1-side" placeholder="Sides description">
+      <div id="tab-editor">
+          <div class="input-group">
+            <label>Auto-Generate Date Label (Pick Monday)</label>
+            <input type="date" id="date-picker" onchange="autoFillDate()">
+            <input type="text" id="edit-week" placeholder="e.g. Oct 27 - Nov 1 (Auto-filled)" style="background:#f8fafc;">
+          </div>
+
+          <div class="input-group">
+            <label>Meal Pillar #1</label>
+            <input list="list-mains" id="m1-main" placeholder="Main Dish">
+            <input list="list-sides" id="m1-side" placeholder="Sides description">
+          </div>
+          <div class="input-group">
+            <label>Meal Pillar #2</label>
+            <input list="list-mains" id="m2-main" placeholder="Main Dish">
+            <input list="list-sides" id="m2-side" placeholder="Sides description">
+          </div>
+          <div class="input-group">
+            <label>Meal Pillar #3</label>
+            <input list="list-mains" id="m3-main" placeholder="Main Dish">
+            <input list="list-sides" id="m3-side" placeholder="Sides description">
+          </div>
+          <button class="btn btn-green" onclick="saveMenu()">Publish Live Menu</button>
       </div>
 
-      <div class="input-group">
-        <label>Meal Pillar #2</label>
-        <input list="list-mains" id="m2-main" placeholder="Main Dish">
-        <input list="list-sides" id="m2-side" placeholder="Sides description">
+      <div id="tab-library" style="display:none;">
+          <p style="font-size:12px; color:var(--text-muted);">Manage your saved dishes here.</p>
+          <div id="library-list" style="max-height:400px; overflow-y:auto;">Loading...</div>
       </div>
 
-      <div class="input-group">
-        <label>Meal Pillar #3</label>
-        <input list="list-mains" id="m3-main" placeholder="Main Dish">
-        <input list="list-sides" id="m3-side" placeholder="Sides description">
+      <div id="tab-requests" style="display:none;">
+          <p style="font-size:12px; color:var(--text-muted);">Customer suggestions and emails.</p>
+          <div id="admin-suggestion-list" style="max-height:400px; overflow-y:auto;">Loading...</div>
       </div>
-
-      <button class="btn" onclick="saveMenu()">Publish Live Menu</button>
 
       <div style="margin-top:40px; border-top:1px solid #e2e8f0; padding-top:20px;">
         <h3 style="font-size:16px; margin:0 0 15px 0; color:var(--brand);">Account Settings</h3>
         <div class="input-group">
-          <label>Set New Password</label>
-          <input type="password" id="new-password" placeholder="Enter new password to save">
+          <input type="password" id="new-password" placeholder="New Password">
           <button class="btn" onclick="updatePassword()" style="background:#475569; margin-top:8px;">Update Password</button>
         </div>
       </div>
-
       <button class="btn btn-logout" onclick="handleLogout()">Log Out</button>
 
       <datalist id="list-mains"></datalist>
@@ -372,8 +295,6 @@
     // --- 1. CONFIGURATION ---
     const SUPABASE_URL = 'https://domtvkfulaimxsbyvryd.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRvbXR2a2Z1bGFpbXhzYnl2cnlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMDEzNjQsImV4cCI6MjA4MTY3NzM2NH0.gtVE1bOIQIzmQSJjOjR6WbPoILyGCylwjm9nuUXmjzA';
-    
-    // Create the client
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // --- 2. INTELLIGENT INITIALIZATION ---
@@ -381,18 +302,18 @@
       if (session) {
         toggleView('view-admin');
         loadAdminData();
+        loadSuggestionsList(); 
+        loadRecipeLibrary(); // Load library
       } else {
         toggleView('view-public');
         loadPublicData();
       }
     });
 
-    // --- 3. DATA LOGIC ---
+    // --- 3. PUBLIC DATA LOGIC ---
     async function loadPublicData() {
-      // Check for Archive ID in URL
       const params = new URLSearchParams(window.location.search);
       const archiveId = params.get('id');
-
       let menu = null;
 
       if (archiveId) {
@@ -421,20 +342,75 @@
     async function loadArchiveData() {
        const { data: history } = await sb.from('menus').select('id, week_label').eq('is_active', false).order('created_at', { ascending: false });
        const list = document.getElementById('archive-list');
-       
        if(history && history.length) {
          list.innerHTML = history.map(m => `
-           <a href="?id=${m.id}" class="archive-link">
-             <span style="float:right; color:#cbd5e1;">&rarr;</span>
-             ${m.week_label}
-           </a>
+           <a href="?id=${m.id}" class="archive-link"><span style="float:right; color:#cbd5e1;">&rarr;</span>${m.week_label}</a>
          `).join('');
        } else {
          list.innerHTML = `<div style="text-align:center; color:#ccc; padding:30px;">No past menus found.</div>`;
        }
     }
 
+    // --- 4. SUGGESTION LOGIC ---
+    async function submitSuggestion() {
+        const emailBox = document.getElementById('suggestion-email');
+        const textBox = document.getElementById('suggestion-text');
+        
+        const email = emailBox.value.trim();
+        const content = textBox.value.trim();
+        
+        // Basic Email Validation Regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if(!content) return alert("Please type a suggestion.");
+        if(!email || !emailRegex.test(email)) return alert("Please enter a valid email address.");
+
+        const btn = event.target;
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        const { error } = await sb.from('suggestions').insert({ content: content, email: email });
+        
+        if(error) {
+            alert("Error sending: " + error.message);
+        } else {
+            alert("Suggestion sent! Lorena will see it shortly.");
+            textBox.value = "";
+            emailBox.value = "";
+        }
+        btn.innerText = "Send Suggestion";
+        btn.disabled = false;
+    }
+
+    // --- 5. ADMIN LOGIC ---
+    function switchAdminTab(tabName) {
+        document.getElementById('tab-editor').style.display = 'none';
+        document.getElementById('tab-library').style.display = 'none';
+        document.getElementById('tab-requests').style.display = 'none';
+        
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('tab-' + tabName).style.display = 'block';
+        event.target.classList.add('active');
+    }
+
+    function autoFillDate() {
+        const picker = document.getElementById('date-picker');
+        if(!picker.value) return;
+        
+        const start = new Date(picker.value + 'T00:00:00'); // Force local time
+        const end = new Date(start);
+        end.setDate(start.getDate() + 4); // Add 4 days to get Friday
+        
+        // Format: "Oct 27"
+        const options = { month: 'short', day: 'numeric' };
+        const label = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+        
+        document.getElementById('edit-week').value = label;
+    }
+
     async function loadAdminData() {
+      // Autocomplete lists
       const { data: recipes } = await sb.from('recipes').select('*');
       const mList = document.getElementById('list-mains');
       const sList = document.getElementById('list-sides');
@@ -444,6 +420,44 @@
         if(r.category === 'main') mList.appendChild(opt);
         if(r.category === 'side') sList.appendChild(opt);
       });
+    }
+
+    async function loadRecipeLibrary() {
+        const { data: recipes } = await sb.from('recipes').select('*').order('category', {ascending: true}).order('name', {ascending: true});
+        const container = document.getElementById('library-list');
+        if(recipes && recipes.length) {
+            container.innerHTML = recipes.map(r => `
+                <div class="recipe-item">
+                    <span><strong>${r.category.toUpperCase()}:</strong> ${r.name}</span>
+                    <button class="btn btn-delete" onclick="deleteRecipe(${r.id})">Delete</button>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = "No recipes saved yet.";
+        }
+    }
+    
+    async function deleteRecipe(id) {
+        if(!confirm("Are you sure you want to delete this recipe?")) return;
+        await sb.from('recipes').delete().eq('id', id);
+        loadRecipeLibrary(); // Refresh
+        loadAdminData(); // Refresh autocomplete
+    }
+
+    async function loadSuggestionsList() {
+        const { data: list } = await sb.from('suggestions').select('*').order('created_at', {ascending: false});
+        const container = document.getElementById('admin-suggestion-list');
+        if(list && list.length > 0) {
+            container.innerHTML = list.map(item => `
+                <div class="admin-suggestion-item">
+                    <div style="font-weight:bold; color:var(--brand);">${item.email || 'Anonymous'}</div>
+                    <div style="margin-top:4px;">${item.content}</div>
+                    <div style="font-size:10px; color:#999; margin-top:4px;">${new Date(item.created_at).toLocaleDateString()}</div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<div style="color:#ccc; font-style:italic;">No suggestions yet.</div>';
+        }
     }
 
     async function saveMenu() {
@@ -478,20 +492,16 @@
       else { location.reload(); }
     }
 
-    // --- NAVIGATION LOGIC ---
+    // --- NAVIGATION ---
     function toggleView(id) {
       ['view-login', 'view-public', 'view-admin', 'view-archive'].forEach(v => {
           const el = document.getElementById(v);
           if(el) el.style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none');
       });
     }
-    
     function showLogin() { toggleView('view-login'); }
     function showPublic() { toggleView('view-public'); }
-    function showArchive() { 
-        toggleView('view-archive'); 
-        loadArchiveData(); // Load only when requested
-    }
+    function showArchive() { toggleView('view-archive'); loadArchiveData(); }
 
     async function handleLogin() {
       const email = document.getElementById('email').value;
@@ -499,11 +509,7 @@
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) alert(error.message); 
     }
-
-    async function handleLogout() { 
-      await sb.auth.signOut();
-    }
-
+    async function handleLogout() { await sb.auth.signOut(); }
     async function updatePassword() {
       const newPassword = document.getElementById('new-password').value;
       if (!newPassword) return alert("Please type a password first.");
@@ -511,9 +517,7 @@
       const originalText = btn.innerText;
       btn.innerText = "Updating...";
       btn.disabled = true;
-
       const { error } = await sb.auth.updateUser({ password: newPassword });
-
       if (error) alert("Error: " + error.message);
       else {
         alert("Success! Password saved.");
