@@ -47,7 +47,7 @@
     .meal-card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 0; display: flex; flex-direction: column; text-align: center; transition: transform 0.2s ease; height: 100%; border: 1px solid rgba(0,0,0,0.03); overflow: hidden; }
     .meal-card:hover { transform: translateY(-3px); }
     
-    /* UPDATED IMAGE CSS: Visible by default, centered */
+    /* Image Box */
     .meal-img-box { 
         width: 100%; height: 220px; 
         background-color: #eee; 
@@ -56,12 +56,8 @@
         display: flex; align-items: center; justify-content: center;
         color: #999; font-size: 12px;
     }
-    .meal-img { 
-        width: 100%; height: 100%; 
-        object-fit: cover; 
-        display: block; 
-        /* Removed opacity:0 to fix the visibility issue */
-    }
+    .meal-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    
     .meal-content { padding: 25px; display:flex; flex-direction:column; align-items:center; }
 
     .meal-number { font-size: 11px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; background: var(--brand-light); display: inline-block; padding: 4px 10px; border-radius: 20px; align-self: center; }
@@ -109,13 +105,19 @@
     .tab-btn { background:none; border:none; color:var(--text-muted); font-weight:600; cursor:pointer; padding:5px; white-space:nowrap; }
     .tab-btn.active { color:var(--brand); border-bottom:2px solid var(--brand); }
 
-    /* CHEF BOT */
+    /* CHEF BOT STYLES */
     .chef-bot-trigger { position: fixed; bottom: 80px; right: 20px; background: #fff; width: 50px; height: 50px; border-radius: 50%; box-shadow: 0 5px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 80; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid var(--brand); }
     .chef-bot-window { position: fixed; bottom: 140px; right: 20px; width: 300px; height: 400px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 85; display: none; flex-direction: column; overflow: hidden; }
     .bot-header { background: var(--brand); color: white; padding: 15px; font-weight: 600; font-size: 14px; }
     .bot-messages { flex: 1; padding: 15px; overflow-y: auto; background: #f9fafb; font-size: 13px; }
     .bot-input-area { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; }
-    .bot-msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; max-width: 85%; }
+    
+    /* FIXED BOT MESSAGES */
+    .bot-msg { 
+        margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; max-width: 85%; 
+        /* Wrap text so it doesn't overflow */
+        word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap;
+    }
     .bot-msg.ai { background: white; border: 1px solid #eee; align-self: flex-start; color: #333; }
     .bot-msg.user { background: var(--brand); color: white; align-self: flex-end; margin-left: auto; }
 
@@ -265,22 +267,31 @@
           <div class="input-group">
               <label>Meal 1</label>
               <input list="list-mains" id="m1-main" placeholder="Main">
-              <button class="btn-magic" onclick="magicRewrite('m1-main')">✨ AI Rewrite Main</button>
-              <input list="list-sides" id="m1-side" placeholder="Side">
+              <div class="btn-toolbar">
+                  <button class="btn-magic" onclick="magicRewrite('m1-main')">✨ AI Rewrite</button>
+                  <button class="btn-reroll" onclick="regenerateActiveImage('m1')">🎲 Reroll Image</button>
+              </div>
+              <input list="list-sides" id="m1-side" placeholder="Side" style="margin-top:5px;">
           </div>
           
           <div class="input-group">
               <label>Meal 2</label>
               <input list="list-mains" id="m2-main" placeholder="Main">
-              <button class="btn-magic" onclick="magicRewrite('m2-main')">✨ AI Rewrite Main</button>
-              <input list="list-sides" id="m2-side" placeholder="Side">
+              <div class="btn-toolbar">
+                  <button class="btn-magic" onclick="magicRewrite('m2-main')">✨ AI Rewrite</button>
+                  <button class="btn-reroll" onclick="regenerateActiveImage('m2')">🎲 Reroll Image</button>
+              </div>
+              <input list="list-sides" id="m2-side" placeholder="Side" style="margin-top:5px;">
           </div>
           
           <div class="input-group">
               <label>Meal 3</label>
               <input list="list-mains" id="m3-main" placeholder="Main">
-              <button class="btn-magic" onclick="magicRewrite('m3-main')">✨ AI Rewrite Main</button>
-              <input list="list-sides" id="m3-side" placeholder="Side">
+              <div class="btn-toolbar">
+                  <button class="btn-magic" onclick="magicRewrite('m3-main')">✨ AI Rewrite</button>
+                  <button class="btn-reroll" onclick="regenerateActiveImage('m3')">🎲 Reroll Image</button>
+              </div>
+              <input list="list-sides" id="m3-side" placeholder="Side" style="margin-top:5px;">
           </div>
 
           <button class="btn btn-green" onclick="saveMenu()">Publish Live Menu</button>
@@ -366,9 +377,10 @@
         const originalText = inputEl.value;
         if(!originalText) return alert("Type a basic food name first (e.g. 'Chicken Rice')");
         inputEl.value = "✨ Rewriting...";
+        // Explicitly use OpenAI model
         const prompt = `Rewrite this food dish name to sound gourmet, delicious and professional for a menu. Keep it under 10 words. Food: "${originalText}"`;
         try {
-            const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+            const response = await fetch(`https://text.pollinations.ai/openai/${encodeURIComponent(prompt)}`);
             const text = await response.text();
             inputEl.value = text.replace(/"/g, ''); 
         } catch(e) { alert("AI Error. Try again."); inputEl.value = originalText; }
@@ -383,13 +395,13 @@
         container.innerHTML = "🤔 Analyzing menu and creating shopping list...";
         const prompt = `Create a categorized grocery shopping list for a chef preparing these 3 meals. Categories: Produce, Meat, Dairy, Pantry. Meals: 1. ${m1}, 2. ${m2}, 3. ${m3}. Return ONLY the list.`;
         try {
-            const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+            const response = await fetch(`https://text.pollinations.ai/openai/${encodeURIComponent(prompt)}`);
             const text = await response.text();
             container.innerHTML = marked.parse(text); 
         } catch(e) { container.innerHTML = "Error generating list."; }
     }
 
-    // --- CHEF BOT LOGIC ---
+    // --- CHEF BOT LOGIC (FIXED) ---
     function toggleChat() {
         const win = document.getElementById('chef-bot-window');
         win.style.display = (win.style.display === 'flex' ? 'none' : 'flex');
@@ -406,8 +418,10 @@
         const loadingId = 'loading-' + Date.now();
         chatBox.innerHTML += `<div id="${loadingId}" class="bot-msg ai">...</div>`;
         const prompt = `You are Lorena's friendly chef assistant. Use this menu context to answer the customer's question. Current Menu: ${currentMenuContext}. Question: ${userMsg}. Keep it short and friendly.`;
+        
         try {
-            const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+            // FIXED API CALL: Explicitly requesting OpenAI model
+            const response = await fetch(`https://text.pollinations.ai/openai/${encodeURIComponent(prompt)}`);
             const text = await response.text();
             document.getElementById(loadingId).innerText = text;
         } catch(e) { document.getElementById(loadingId).innerText = "Sorry, I'm having trouble connecting to the kitchen!"; }
@@ -452,7 +466,7 @@
     }
     document.addEventListener('input', function(e) { if(e.target.id === 'suggestion-text') localStorage.setItem('suggestion_draft', e.target.value); });
 
-    // --- LOAD PUBLIC DATA (WITH AI IMAGES) ---
+    // --- LOAD PUBLIC DATA (WITH FIXED IMAGES) ---
     async function loadPublicData() {
       const params = new URLSearchParams(window.location.search);
       const archiveId = params.get('id');
@@ -470,39 +484,21 @@
         const d = menu.menu_data;
         currentMenuContext = `1. ${d.m1_main} (${d.m1_side}), 2. ${d.m2_main} (${d.m2_side}), 3. ${d.m3_main} (${d.m3_side})`;
         
-        // ADDED RANDOM SEED TO FORCE REFRESH
-        const getAiImage = (n) => `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${n}, professional food photography, 4k`)}?width=800&height=600&nologo=true&seed=${Math.random()}`;
+        // Helper to get image URL: Use saved URL if exists, else fallback to dynamic
+        const getUrl = (savedUrl, name) => savedUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${name}, professional food photography, 4k`)}?width=800&height=600&nologo=true`;
 
         document.getElementById('menu-grid-container').innerHTML = `
           <div class="meal-card">
-            <div class="meal-img-box">
-                <img src="${getAiImage(d.m1_main)}" class="meal-img">
-            </div>
-            <div class="meal-content">
-                <span class="meal-number">Meal 01</span>
-                <h3 class="meal-title">${d.m1_main}</h3>
-                <p class="meal-side">${d.m1_side}</p>
-            </div>
+            <div class="meal-img-box"><img src="${getUrl(d.m1_img, d.m1_main)}" class="meal-img"></div>
+            <div class="meal-content"><span class="meal-number">Meal 01</span><h3 class="meal-title">${d.m1_main}</h3><p class="meal-side">${d.m1_side}</p></div>
           </div>
           <div class="meal-card">
-            <div class="meal-img-box">
-                <img src="${getAiImage(d.m2_main)}" class="meal-img">
-            </div>
-            <div class="meal-content">
-                <span class="meal-number">Meal 02</span>
-                <h3 class="meal-title">${d.m2_main}</h3>
-                <p class="meal-side">${d.m2_side}</p>
-            </div>
+            <div class="meal-img-box"><img src="${getUrl(d.m2_img, d.m2_main)}" class="meal-img"></div>
+            <div class="meal-content"><span class="meal-number">Meal 02</span><h3 class="meal-title">${d.m2_main}</h3><p class="meal-side">${d.m2_side}</p></div>
           </div>
           <div class="meal-card">
-            <div class="meal-img-box">
-                <img src="${getAiImage(d.m3_main)}" class="meal-img">
-            </div>
-            <div class="meal-content">
-                <span class="meal-number">Meal 03</span>
-                <h3 class="meal-title">${d.m3_main}</h3>
-                <p class="meal-side">${d.m3_side}</p>
-            </div>
+            <div class="meal-img-box"><img src="${getUrl(d.m3_img, d.m3_main)}" class="meal-img"></div>
+            <div class="meal-content"><span class="meal-number">Meal 03</span><h3 class="meal-title">${d.m3_main}</h3><p class="meal-side">${d.m3_side}</p></div>
           </div>`;
       } else {
         document.getElementById('week-display').style.display = 'none';
@@ -554,4 +550,104 @@
     }
 
     async function loadAdminData() {
-      const
+      const { data: recipes } = await sb.from('recipes').select('*');
+      const mList = document.getElementById('list-mains'); const sList = document.getElementById('list-sides');
+      mList.innerHTML = ''; sList.innerHTML = '';
+      if (recipes) recipes.forEach(r => { const opt = document.createElement('option'); opt.value = r.name; if(r.category === 'main') mList.appendChild(opt); if(r.category === 'side') sList.appendChild(opt); });
+    }
+    async function loadRecipeLibrary() {
+        const { data: recipes } = await sb.from('recipes').select('*').order('category', {ascending: true}).order('name', {ascending: true});
+        const container = document.getElementById('library-list');
+        if(recipes && recipes.length) container.innerHTML = recipes.map(r => `<div class="recipe-item"><span><strong>${r.category.toUpperCase()}:</strong> ${r.name}</span><button class="btn btn-delete" onclick="deleteRecipe(${r.id})">Delete</button></div>`).join('');
+        else container.innerHTML = "No recipes saved.";
+    }
+    async function deleteRecipe(id) { if(confirm("Delete?")) await sb.from('recipes').delete().eq('id', id); loadRecipeLibrary(); loadAdminData(); }
+    async function loadSuggestionsList() {
+        const { data: list } = await sb.from('suggestions').select('*').order('created_at', {ascending: false});
+        const container = document.getElementById('admin-suggestion-list');
+        if(list && list.length) container.innerHTML = list.map(item => `<div class="admin-suggestion-item"><div style="font-weight:bold; color:var(--brand);">${item.email || 'Anonymous'}</div><div style="margin-top:4px;">${item.content}</div></div>`).join('');
+        else container.innerHTML = "No suggestions.";
+    }
+
+    // --- REGENERATE SINGLE IMAGE (Admin) ---
+    async function regenerateActiveImage(slotPrefix) {
+        // 1. Get current text from input
+        const mainDish = document.getElementById(`${slotPrefix}-main`).value;
+        if(!mainDish) return alert("Enter dish name first.");
+        
+        const btn = event.target;
+        btn.innerText = "🎲 Rolling...";
+        
+        // 2. Generate new URL with unique seed
+        const newSeed = Math.floor(Math.random() * 9999);
+        const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${mainDish}, professional food photography, 4k`)}?width=800&height=600&nologo=true&seed=${newSeed}`;
+        
+        // 3. Update the ACTIVE menu in database
+        const { data: activeMenu } = await sb.from('menus').select('*').eq('is_active', true).single();
+        if(activeMenu) {
+            const updatedData = activeMenu.menu_data;
+            updatedData[`${slotPrefix}_img`] = newUrl; // Update specific image key
+            
+            await sb.from('menus').update({ menu_data: updatedData }).eq('id', activeMenu.id);
+            alert("Image updated! Check the public menu.");
+        } else {
+            alert("No active menu found. Publish one first!");
+        }
+        btn.innerText = "🎲 Reroll Image";
+    }
+
+    async function saveMenu() {
+      const weekLabel = document.getElementById('edit-week').value;
+      const m1_main = document.getElementById('m1-main').value; const m1_side = document.getElementById('m1-side').value;
+      const m2_main = document.getElementById('m2-main').value; const m2_side = document.getElementById('m2-side').value;
+      const m3_main = document.getElementById('m3-main').value; const m3_side = document.getElementById('m3-side').value;
+      
+      if (!weekLabel || !m1_main) return alert("Fill out menu.");
+      
+      const btn = document.querySelector('.btn-green');
+      btn.innerText = "Publishing & Generating Images...";
+      btn.disabled = true;
+
+      await sb.from('menus').update({ is_active: false }).eq('is_active', true);
+      
+      // Save recipes
+      const saveR = async (n, c) => { if(!n) return; const { data } = await sb.from('recipes').select('id').eq('name', n).single(); if(!data) await sb.from('recipes').insert({ name: n, category: c }); };
+      await saveR(m1_main, 'main'); await saveR(m1_side, 'side'); await saveR(m2_main, 'main'); await saveR(m2_side, 'side'); await saveR(m3_main, 'main'); await saveR(m3_side, 'side');
+      
+      // GENERATE PERMANENT IMAGE URLs
+      const getFixedUrl = (n) => `https://image.pollinations.ai/prompt/${encodeURIComponent(`delicious gourmet ${n}, professional food photography, 4k`)}?width=800&height=600&nologo=true&seed=${Math.floor(Math.random() * 9999)}`;
+      
+      const menuData = { 
+          m1_main, m1_side, m1_img: getFixedUrl(m1_main),
+          m2_main, m2_side, m2_img: getFixedUrl(m2_main),
+          m3_main, m3_side, m3_img: getFixedUrl(m3_main)
+      };
+
+      const { error } = await sb.from('menus').insert({ week_label: weekLabel, is_active: true, menu_data: menuData });
+      
+      if(error) { alert(error.message); btn.disabled=false; btn.innerText="Publish Live Menu"; } 
+      else { alert("Menu Published & Images Generated!"); location.reload(); }
+    }
+
+    function toggleView(id) { ['view-login', 'view-public', 'view-admin', 'view-archive'].forEach(v => { const el = document.getElementById(v); if(el) el.style.display = (v === id ? (v==='view-login'?'flex':'block') : 'none'); }); }
+    function showAdmin() { toggleView('view-admin'); }
+    function showLogin() { toggleView('view-login'); }
+    function showPublic() { toggleView('view-public'); }
+    function showArchive() { toggleView('view-archive'); loadArchiveData(); }
+
+    async function handleLogin() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) alert(error.message); 
+    }
+    async function handleLogout() { await sb.auth.signOut(); }
+    async function updatePassword() {
+      const newPassword = document.getElementById('new-password').value;
+      if (!newPassword) return alert("Enter password.");
+      const { error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) alert(error.message); else { alert("Saved!"); document.getElementById('new-password').value = ""; }
+    }
+  </script>
+</body>
+</html>
